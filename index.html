@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python OOP Structure Visualizer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            min-height: 100vh;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Left Panel - Code Input */
+        .input-panel {
+            width: 400px;
+            background: #16213e;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #0f3460;
+        }
+
+        .input-panel h2 {
+            color: #e94560;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .file-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .file-tab {
+            padding: 8px 15px;
+            background: #0f3460;
+            border: none;
+            color: #aaa;
+            cursor: pointer;
+            border-radius: 5px 5px 0 0;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .file-tab:hover {
+            background: #1a4a7a;
+        }
+
+        .file-tab.active {
+            background: #e94560;
+            color: white;
+        }
+
+        .file-tab .remove {
+            margin-left: 8px;
+            opacity: 0.6;
+        }
+
+        .file-tab .remove:hover {
+            opacity: 1;
+        }
+
+        .add-file-btn {
+            padding: 8px 15px;
+            background: transparent;
+            border: 1px dashed #0f3460;
+            color: #666;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 0.85rem;
+        }
+
+        .add-file-btn:hover {
+            border-color: #e94560;
+            color: #e94560;
+        }
+
+        .code-input {
+            flex: 1;
+            background: #0d1b2a;
+            border: 1px solid #0f3460;
+            border-radius: 8px;
+            padding: 15px;
+            color: #a8dadc;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 13px;
+            resize: none;
+            line-height: 1.5;
+        }
+
+        .code-input:focus {
+            outline: none;
+            border-color: #e94560;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .parse-btn {
+            flex: 1;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #e94560, #c73659);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .parse-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(233, 69, 96, 0.4);
+        }
+
+        .load-example-btn {
+            padding: 12px 20px;
+            background: #0f3460;
+            border: none;
+            border-radius: 8px;
+            color: #aaa;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .load-example-btn:hover {
+            background: #1a4a7a;
+            color: white;
+        }
+
+        /* Right Panel - Visualization */
+        .viz-panel {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .viz-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .viz-controls button {
+            padding: 8px 15px;
+            background: rgba(15, 52, 96, 0.9);
+            border: 1px solid #0f3460;
+            border-radius: 5px;
+            color: #aaa;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .viz-controls button:hover {
+            background: #1a4a7a;
+            color: white;
+        }
+
+        #visualization {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Node Styles */
+        .node-group {
+            cursor: pointer;
+        }
+
+        .node-project rect {
+            fill: #4361ee;
+            stroke: #3a56d4;
+            stroke-width: 2;
+            rx: 8;
+        }
+
+        .node-module rect {
+            fill: #fca311;
+            stroke: #e09300;
+            stroke-width: 2;
+            rx: 6;
+        }
+
+        .node-class ellipse {
+            fill: #06d6a0;
+            stroke: #05b588;
+            stroke-width: 2;
+        }
+
+        .node-method polygon {
+            fill: #ef476f;
+            stroke: #d63d5f;
+            stroke-width: 2;
+        }
+
+        .node-variable rect {
+            fill: #9d4edd;
+            stroke: #8b3dc9;
+            stroke-width: 1.5;
+            rx: 3;
+        }
+
+        .node-data rect {
+            fill: #577590;
+            stroke: #456070;
+            stroke-width: 2;
+            rx: 4;
+        }
+
+        .node-loop polygon {
+            fill: #ffd166;
+            stroke: #e6b84d;
+            stroke-width: 2;
+        }
+
+        .node-instantiation rect {
+            fill: #118ab2;
+            stroke: #0e7499;
+            stroke-width: 2;
+            rx: 5;
+        }
+
+        .node-text {
+            font-family: 'Segoe UI', sans-serif;
+            fill: white;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            pointer-events: none;
+        }
+
+        .node-text-dark {
+            fill: #1a1a2e;
+        }
+
+        .link {
+            fill: none;
+            stroke: #4a5568;
+            stroke-width: 1.5;
+        }
+
+        .link-uses {
+            stroke: #e94560;
+            stroke-dasharray: 5, 3;
+            stroke-width: 1.5;
+        }
+
+        /* Legend */
+        .legend {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(22, 33, 62, 0.95);
+            padding: 15px 20px;
+            border-radius: 10px;
+            border: 1px solid #0f3460;
+        }
+
+        .legend h4 {
+            color: #e94560;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 6px;
+            font-size: 0.8rem;
+            color: #aaa;
+        }
+
+        .legend-shape {
+            width: 24px;
+            height: 16px;
+            border-radius: 3px;
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: absolute;
+            background: rgba(22, 33, 62, 0.95);
+            border: 1px solid #e94560;
+            border-radius: 8px;
+            padding: 12px 15px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            max-width: 300px;
+            z-index: 1000;
+        }
+
+        .tooltip h4 {
+            color: #e94560;
+            margin-bottom: 5px;
+        }
+
+        .tooltip p {
+            color: #aaa;
+            font-size: 0.85rem;
+            margin: 3px 0;
+        }
+
+        .tooltip code {
+            background: #0d1b2a;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            color: #a8dadc;
+        }
+
+        /* Project name input */
+        .project-name-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .project-name-input {
+            flex: 1;
+            padding: 10px 15px;
+            background: #0d1b2a;
+            border: 1px solid #0f3460;
+            border-radius: 5px;
+            color: #e94560;
+            font-weight: 600;
+        }
+
+        .project-name-input:focus {
+            outline: none;
+            border-color: #e94560;
+        }
+
+        /* Instructions */
+        .instructions {
+            margin-top: 15px;
+            padding: 12px;
+            background: rgba(233, 69, 96, 0.1);
+            border-radius: 8px;
+            font-size: 0.8rem;
+            color: #aaa;
+            line-height: 1.6;
+        }
+
+        .instructions strong {
+            color: #e94560;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="input-panel">
+            <h2>🐍 Python Structure Visualizer</h2>
+            
+            <div class="project-name-row">
+                <input type="text" class="project-name-input" id="projectName" placeholder="Project Name" value="Quiz Project">
+            </div>
+            
+            <div class="file-tabs" id="fileTabs">
+                <button class="file-tab active" data-file="0">data.py</button>
+                <button class="file-tab" data-file="1">question_model.py</button>
+                <button class="file-tab" data-file="2">quiz_brain.py</button>
+                <button class="file-tab" data-file="3">main.py</button>
+                <button class="add-file-btn" id="addFileBtn">+ Add</button>
+            </div>
+            
+            <textarea class="code-input" id="codeInput" placeholder="Paste your Python code here..."></textarea>
+            
+            <div class="btn-row">
+                <button class="parse-btn" id="parseBtn">📊 Generate Diagram</button>
+                <button class="load-example-btn" id="loadExampleBtn">Load Example</button>
+            </div>
+            
+            <div class="instructions">
+                <strong>How to use:</strong><br>
+                1. Add your Python files using tabs<br>
+                2. Paste code into each file tab<br>
+                3. Click "Generate Diagram" to visualize<br>
+                4. Drag to pan, scroll to zoom
+            </div>
+        </div>
+        
+        <div class="viz-panel">
+            <div class="viz-controls">
+                <button id="zoomIn">Zoom +</button>
+                <button id="zoomOut">Zoom −</button>
+                <button id="resetView">Reset View</button>
+                <button id="exportSVG">Export SVG</button>
+            </div>
+            
+            <svg id="visualization"></svg>
+            
+            <div class="legend">
+                <h4>Legend</h4>
+                <div class="legend-item">
+                    <div class="legend-shape" style="background: #4361ee;"></div>
+                    <span>Project</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-shape" style="background: #fca311;"></div>
+                    <span>Module (file)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-shape" style="background: #06d6a0; border-radius: 50%;"></div>
+                    <span>Class</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-shape" style="background: #ef476f; clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);"></div>
+                    <span>Method / Function</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-shape" style="background: #9d4edd;"></div>
+                    <span>Variable / Attribute</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-shape" style="background: #577590;"></div>
+                    <span>Data (dict/list)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-shape" style="background: #118ab2;"></div>
+                    <span>Instantiation</span>
+                </div>
+            </div>
+            
+            <div class="tooltip" id="tooltip"></div>
+        </div>
+    </div>
+
+    <script>
+        // =============================================
+        // File Management
+        // =============================================
+        const files = [
+            { name: 'data.py', code: '' },
+            { name: 'question_model.py', code: '' },
+            { name: 'quiz_brain.py', code: '' },
+            { name: 'main.py', code: '' }
+        ];
+        let activeFileIndex = 0;
+
+        const fileTabs = document.getElementById('fileTabs');
+        const codeInput = document.getElementById('codeInput');
+        const addFileBtn = document.getElementById('addFileBtn');
+
+        function renderFileTabs() {
+            fileTabs.innerHTML = '';
+            files.forEach((file, index) => {
+                const tab = document.createElement('button');
+                tab.className = `file-tab ${index === activeFileIndex ? 'active' : ''}`;
+                tab.dataset.file = index;
+                tab.innerHTML = `${file.name}${files.length > 1 ? `<span class="remove" data-remove="${index}">×</span>` : ''}`;
+                fileTabs.appendChild(tab);
+            });
+            fileTabs.appendChild(addFileBtn);
+        }
+
+        fileTabs.addEventListener('click', (e) => {
+            if (e.target.dataset.file !== undefined) {
+                files[activeFileIndex].code = codeInput.value;
+                activeFileIndex = parseInt(e.target.dataset.file);
+                codeInput.value = files[activeFileIndex].code;
+                renderFileTabs();
+            } else if (e.target.dataset.remove !== undefined) {
+                e.stopPropagation();
+                const removeIndex = parseInt(e.target.dataset.remove);
+                if (files.length > 1) {
+                    files.splice(removeIndex, 1);
+                    if (activeFileIndex >= files.length) activeFileIndex = files.length - 1;
+                    codeInput.value = files[activeFileIndex].code;
+                    renderFileTabs();
+                }
+            }
+        });
+
+        addFileBtn.addEventListener('click', () => {
+            files[activeFileIndex].code = codeInput.value;
+            const newName = prompt('Enter file name (e.g., utils.py):', 'new_file.py');
+            if (newName) {
+                files.push({ name: newName, code: '' });
+                activeFileIndex = files.length - 1;
+                codeInput.value = '';
+                renderFileTabs();
+            }
+        });
+
+        // =============================================
+        // Python Parser (Simplified AST-like parsing)
+        // =============================================
+        function parsePythonCode(code, moduleName) {
+            const result = {
+                name: moduleName,
+                classes: [],
+                functions: [],
+                data: [],
+                lists: [],
+                instantiations: [],
+                loops: [],
+                imports: []
+            };
+
+            const lines = code.split('\n');
+            let currentClass = null;
+            let currentMethod = null;
+            let classIndent = 0;
+            let methodIndent = 0;
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                const trimmed = line.trim();
+                const indent = line.search(/\S/);
+
+                // Skip empty lines and comments
+                if (!trimmed || trimmed.startsWith('#')) continue;
+
+                // Parse imports
+                if (trimmed.startsWith('import ') || trimmed.startsWith('from ')) {
+                    const match = trimmed.match(/(?:from\s+(\w+)|import\s+(\w+))/);
+                    if (match) {
+                        result.imports.push(match[1] || match[2]);
+                    }
+                    continue;
+                }
+
+                // Parse class definitions
+                const classMatch = trimmed.match(/^class\s+(\w+)(?:\(.*\))?:/);
+                if (classMatch) {
+                    currentClass = {
+                        name: classMatch[1],
+                        methods: [],
+                        initVars: []
+                    };
+                    result.classes.push(currentClass);
+                    classIndent = indent;
+                    currentMethod = null;
+                    continue;
+                }
+
+                // Check if we're still inside a class
+                if (currentClass && indent <= classIndent && trimmed && !trimmed.startsWith('class ')) {
+                    currentClass = null;
+                    currentMethod = null;
+                }
+
+                // Parse method definitions (inside class)
+                if (currentClass) {
+                    const methodMatch = trimmed.match(/^def\s+(\w+)\s*\(/);
+                    if (methodMatch) {
+                        currentMethod = {
+                            name: methodMatch[1],
+                            variables: []
+                        };
+                        currentClass.methods.push(currentMethod);
+                        methodIndent = indent;
+                        continue;
+                    }
+
+                    // Check if still inside method
+                    if (currentMethod && indent <= methodIndent && !trimmed.startsWith('def ')) {
+                        currentMethod = null;
+                    }
+
+                    // Parse self.x assignments in __init__
+                    if (currentMethod && currentMethod.name === '__init__') {
+                        const selfMatch = trimmed.match(/self\.(\w+)\s*=/);
+                        if (selfMatch && !currentClass.initVars.includes(selfMatch[1])) {
+                            currentClass.initVars.push(selfMatch[1]);
+                        }
+                    }
+
+                    // Parse local variables in methods
+                    if (currentMethod && currentMethod.name !== '__init__') {
+                        const varMatch = trimmed.match(/^(\w+)\s*=\s*(?!.*def\s)/);
+                        if (varMatch && !['self', '_', 'True', 'False', 'None'].includes(varMatch[1])) {
+                            if (!currentMethod.variables.includes(varMatch[1])) {
+                                currentMethod.variables.push(varMatch[1]);
+                            }
+                        }
+                        // Also catch self.x in non-init methods
+                        const selfVarMatch = trimmed.match(/self\.(\w+)\s*=/);
+                        if (selfVarMatch) {
+                            const varName = `self.${selfVarMatch[1]}`;
+                            if (!currentMethod.variables.includes(varName)) {
+                                currentMethod.variables.push(varName);
+                            }
+                        }
+                    }
+                    continue;
+                }
+
+                // Parse standalone functions (outside class)
+                const funcMatch = trimmed.match(/^def\s+(\w+)\s*\(/);
+                if (funcMatch && !currentClass) {
+                    result.functions.push({
+                        name: funcMatch[1],
+                        variables: []
+                    });
+                    continue;
+                }
+
+                // Parse data structures (dicts and lists)
+                const dictMatch = trimmed.match(/^(\w+)\s*=\s*[\[{]/);
+                if (dictMatch && !currentClass && !currentMethod) {
+                    if (trimmed.includes('{') || trimmed.includes('dict(')) {
+                        result.data.push(dictMatch[1]);
+                    } else if (trimmed.includes('[')) {
+                        result.lists.push(dictMatch[1]);
+                    }
+                    continue;
+                }
+
+                // Parse instantiations
+                const instMatch = trimmed.match(/^(\w+)\s*=\s*(\w+)\s*\((.*)\)/);
+                if (instMatch && !currentClass) {
+                    const className = instMatch[2];
+                    // Check if it looks like a class instantiation (capitalized)
+                    if (className[0] === className[0].toUpperCase() && className[0] !== className[0].toLowerCase()) {
+                        result.instantiations.push({
+                            variable: instMatch[1],
+                            className: className,
+                            args: instMatch[3]
+                        });
+                        continue;
+                    }
+                }
+
+                // Parse loops
+                if (trimmed.startsWith('for ') && !currentClass) {
+                    result.loops.push({ type: 'for', condition: trimmed });
+                } else if (trimmed.startsWith('while ') && !currentClass) {
+                    result.loops.push({ type: 'while', condition: trimmed });
+                }
+            }
+
+            return result;
+        }
+
+        // =============================================
+        // Build Hierarchical Structure
+        // =============================================
+        function buildHierarchy(projectName, modules) {
+            const root = {
+                id: 'project',
+                name: projectName,
+                type: 'project',
+                children: []
+            };
+
+            modules.forEach((moduleData, idx) => {
+                const moduleNode = {
+                    id: `module_${idx}`,
+                    name: moduleData.name.replace('.py', ''),
+                    type: 'module',
+                    children: []
+                };
+
+                // Add data structures
+                moduleData.data.forEach((d, i) => {
+                    moduleNode.children.push({
+                        id: `${moduleNode.id}_data_${i}`,
+                        name: d,
+                        type: 'data',
+                        children: []
+                    });
+                });
+
+                // Add lists
+                moduleData.lists.forEach((l, i) => {
+                    moduleNode.children.push({
+                        id: `${moduleNode.id}_list_${i}`,
+                        name: l,
+                        type: 'data',
+                        children: []
+                    });
+                });
+
+                // Add classes
+                moduleData.classes.forEach((cls, i) => {
+                    const classNode = {
+                        id: `${moduleNode.id}_class_${i}`,
+                        name: cls.name,
+                        type: 'class',
+                        children: []
+                    };
+
+                    // Add methods
+                    cls.methods.forEach((method, j) => {
+                        const methodNode = {
+                            id: `${classNode.id}_method_${j}`,
+                            name: method.name,
+                            type: 'method',
+                            children: []
+                        };
+
+                        // Add variables for this method
+                        if (method.name === '__init__') {
+                            cls.initVars.forEach((v, k) => {
+                                methodNode.children.push({
+                                    id: `${methodNode.id}_var_${k}`,
+                                    name: `self.${v}`,
+                                    type: 'variable',
+                                    children: []
+                                });
+                            });
+                        } else {
+                            method.variables.forEach((v, k) => {
+                                methodNode.children.push({
+                                    id: `${methodNode.id}_var_${k}`,
+                                    name: v,
+                                    type: 'variable',
+                                    children: []
+                                });
+                            });
+                        }
+
+                        classNode.children.push(methodNode);
+                    });
+
+                    moduleNode.children.push(classNode);
+                });
+
+                // Add standalone functions
+                moduleData.functions.forEach((func, i) => {
+                    moduleNode.children.push({
+                        id: `${moduleNode.id}_func_${i}`,
+                        name: func.name,
+                        type: 'method',
+                        children: []
+                    });
+                });
+
+                // Add instantiations
+                moduleData.instantiations.forEach((inst, i) => {
+                    moduleNode.children.push({
+                        id: `${moduleNode.id}_inst_${i}`,
+                        name: `${inst.variable} = ${inst.className}(${inst.args})`,
+                        shortName: inst.variable,
+                        className: inst.className,
+                        type: 'instantiation',
+                        children: []
+                    });
+                });
+
+                // Add loops
+                moduleData.loops.forEach((loop, i) => {
+                    moduleNode.children.push({
+                        id: `${moduleNode.id}_loop_${i}`,
+                        name: loop.type.charAt(0).toUpperCase() + loop.type.slice(1),
+                        condition: loop.condition,
+                        type: 'loop',
+                        children: []
+                    });
+                });
+
+                root.children.push(moduleNode);
+            });
+
+            return root;
+        }
+
+        // =============================================
+        // D3 Visualization
+        // =============================================
+        const svg = d3.select('#visualization');
+        const tooltip = d3.select('#tooltip');
+        let g;
+        let zoom;
+
+        function initVisualization() {
+            const width = svg.node().parentElement.clientWidth;
+            const height = svg.node().parentElement.clientHeight;
+
+            svg.attr('width', width).attr('height', height);
+            svg.selectAll('*').remove();
+
+            // Add defs for arrow markers
+            const defs = svg.append('defs');
+            defs.append('marker')
+                .attr('id', 'arrowhead')
+                .attr('viewBox', '-0 -5 10 10')
+                .attr('refX', 8)
+                .attr('refY', 0)
+                .attr('orient', 'auto')
+                .attr('markerWidth', 6)
+                .attr('markerHeight', 6)
+                .append('path')
+                .attr('d', 'M 0,-5 L 10,0 L 0,5')
+                .attr('fill', '#4a5568');
+
+            g = svg.append('g');
+
+            zoom = d3.zoom()
+                .scaleExtent([0.2, 3])
+                .on('zoom', (event) => {
+                    g.attr('transform', event.transform);
+                });
+
+            svg.call(zoom);
+        }
+
+        function renderTree(data) {
+            initVisualization();
+
+            const width = svg.node().parentElement.clientWidth;
+            const height = svg.node().parentElement.clientHeight;
+
+            // Create tree layout
+            const treeLayout = d3.tree()
+                .nodeSize([200, 120])
+                .separation((a, b) => {
+                    // More separation for different parents
+                    if (a.parent !== b.parent) return 1.5;
+                    // More space for nodes with many children
+                    const maxChildren = Math.max(
+                        a.children ? a.children.length : 0,
+                        b.children ? b.children.length : 0
+                    );
+                    return 1 + maxChildren * 0.1;
+                });
+
+            const root = d3.hierarchy(data);
+            treeLayout(root);
+
+            // Center the tree
+            const nodes = root.descendants();
+            const xExtent = d3.extent(nodes, d => d.x);
+            const yExtent = d3.extent(nodes, d => d.y);
+            const treeWidth = xExtent[1] - xExtent[0];
+            const treeHeight = yExtent[1] - yExtent[0];
+
+            // Initial transform to center
+            const initialScale = Math.min(
+                (width - 100) / (treeWidth + 400),
+                (height - 100) / (treeHeight + 200),
+                1
+            );
+            const tx = width / 2 - (xExtent[0] + treeWidth / 2) * initialScale;
+            const ty = 80;
+
+            svg.call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(initialScale));
+
+            // Draw links
+            const links = g.selectAll('.link')
+                .data(root.links())
+                .enter()
+                .append('path')
+                .attr('class', 'link')
+                .attr('d', d3.linkVertical()
+                    .x(d => d.x)
+                    .y(d => d.y)
+                )
+                .attr('marker-end', 'url(#arrowhead)');
+
+            // Draw nodes
+            const nodeGroups = g.selectAll('.node-group')
+                .data(nodes)
+                .enter()
+                .append('g')
+                .attr('class', d => `node-group node-${d.data.type}`)
+                .attr('transform', d => `translate(${d.x}, ${d.y})`)
+                .on('mouseover', showTooltip)
+                .on('mouseout', hideTooltip);
+
+            // Render different node shapes based on type
+            nodeGroups.each(function(d) {
+                const node = d3.select(this);
+                const nodeData = d.data;
+
+                switch(nodeData.type) {
+                    case 'project':
+                        drawProjectNode(node, nodeData);
+                        break;
+                    case 'module':
+                        drawModuleNode(node, nodeData);
+                        break;
+                    case 'class':
+                        drawClassNode(node, nodeData);
+                        break;
+                    case 'method':
+                        drawMethodNode(node, nodeData);
+                        break;
+                    case 'variable':
+                        drawVariableNode(node, nodeData);
+                        break;
+                    case 'data':
+                        drawDataNode(node, nodeData);
+                        break;
+                    case 'instantiation':
+                        drawInstantiationNode(node, nodeData);
+                        break;
+                    case 'loop':
+                        drawLoopNode(node, nodeData);
+                        break;
+                }
+            });
+        }
+
+        function drawProjectNode(node, data) {
+            node.append('rect')
+                .attr('x', -80)
+                .attr('y', -25)
+                .attr('width', 160)
+                .attr('height', 50)
+                .attr('rx', 8);
+
+            node.append('text')
+                .attr('class', 'node-text')
+                .attr('font-size', '16px')
+                .attr('font-weight', 'bold')
+                .text(data.name);
+        }
+
+        function drawModuleNode(node, data) {
+            node.append('rect')
+                .attr('x', -70)
+                .attr('y', -20)
+                .attr('width', 140)
+                .attr('height', 40)
+                .attr('rx', 6);
+
+            node.append('text')
+                .attr('class', 'node-text node-text-dark')
+                .attr('font-size', '14px')
+                .attr('font-weight', '600')
+                .text(data.name);
+        }
+
+        function drawClassNode(node, data) {
+            node.append('ellipse')
+                .attr('cx', 0)
+                .attr('cy', 0)
+                .attr('rx', 70)
+                .attr('ry', 25);
+
+            node.append('text')
+                .attr('class', 'node-text node-text-dark')
+                .attr('font-size', '13px')
+                .attr('font-weight', '600')
+                .text(data.name);
+        }
+
+        function drawMethodNode(node, data) {
+            // Hexagon shape
+            const w = 65, h = 20;
+            const points = [
+                [-w, 0],
+                [-w + 15, -h],
+                [w - 15, -h],
+                [w, 0],
+                [w - 15, h],
+                [-w + 15, h]
+            ];
+
+            node.append('polygon')
+                .attr('points', points.map(p => p.join(',')).join(' '));
+
+            node.append('text')
+                .attr('class', 'node-text')
+                .attr('font-size', '12px')
+                .text(data.name);
+        }
+
+        function drawVariableNode(node, data) {
+            const textLen = Math.max(data.name.length * 7, 60);
+            
+            node.append('rect')
+                .attr('x', -textLen/2 - 10)
+                .attr('y', -12)
+                .attr('width', textLen + 20)
+                .attr('height', 24)
+                .attr('rx', 3);
+
+            node.append('text')
+                .attr('class', 'node-text')
+                .attr('font-size', '11px')
+                .text(data.name);
+        }
+
+        function drawDataNode(node, data) {
+            node.append('rect')
+                .attr('x', -55)
+                .attr('y', -18)
+                .attr('width', 110)
+                .attr('height', 36)
+                .attr('rx', 4);
+
+            node.append('text')
+                .attr('class', 'node-text')
+                .attr('font-size', '12px')
+                .text(data.name);
+        }
+
+        function drawInstantiationNode(node, data) {
+            const displayText = data.shortName || data.name;
+            const textLen = Math.max(displayText.length * 7, 80);
+            
+            node.append('rect')
+                .attr('x', -textLen/2 - 10)
+                .attr('y', -15)
+                .attr('width', textLen + 20)
+                .attr('height', 30)
+                .attr('rx', 5);
+
+            node.append('text')
+                .attr('class', 'node-text')
+                .attr('font-size', '11px')
+                .text(displayText);
+        }
+
+        function drawLoopNode(node, data) {
+            // Parallelogram
+            const w = 50, h = 15;
+            const skew = 10;
+            const points = [
+                [-w + skew, -h],
+                [w + skew, -h],
+                [w - skew, h],
+                [-w - skew, h]
+            ];
+
+            node.append('polygon')
+                .attr('points', points.map(p => p.join(',')).join(' '));
+
+            node.append('text')
+                .attr('class', 'node-text node-text-dark')
+                .attr('font-size', '12px')
+                .attr('font-weight', '600')
+                .text(data.name);
+        }
+
+        function showTooltip(event, d) {
+            const data = d.data;
+            let html = `<h4>${data.name}</h4>`;
+            html += `<p>Type: <code>${data.type}</code></p>`;
+            
+            if (data.type === 'instantiation' && data.className) {
+                html += `<p>Creates: <code>${data.className}</code></p>`;
+            }
+            if (data.type === 'loop' && data.condition) {
+                html += `<p>Condition: <code>${data.condition.substring(0, 50)}...</code></p>`;
+            }
+            if (d.children && d.children.length > 0) {
+                html += `<p>Children: ${d.children.length}</p>`;
+            }
+
+            tooltip
+                .html(html)
+                .style('left', (event.pageX + 15) + 'px')
+                .style('top', (event.pageY - 10) + 'px')
+                .style('opacity', 1);
+        }
+
+        function hideTooltip() {
+            tooltip.style('opacity', 0);
+        }
+
+        // =============================================
+        // Controls
+        // =============================================
+        document.getElementById('zoomIn').addEventListener('click', () => {
+            svg.transition().call(zoom.scaleBy, 1.3);
+        });
+
+        document.getElementById('zoomOut').addEventListener('click', () => {
+            svg.transition().call(zoom.scaleBy, 0.7);
+        });
+
+        document.getElementById('resetView').addEventListener('click', () => {
+            const width = svg.node().parentElement.clientWidth;
+            svg.transition().call(zoom.transform, d3.zoomIdentity.translate(width/2, 80).scale(0.6));
+        });
+
+        document.getElementById('exportSVG').addEventListener('click', () => {
+            const svgEl = document.getElementById('visualization');
+            const svgData = new XMLSerializer().serializeToString(svgEl);
+            const blob = new Blob([svgData], {type: 'image/svg+xml'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'python_structure.svg';
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        // =============================================
+        // Parse Button
+        // =============================================
+        document.getElementById('parseBtn').addEventListener('click', () => {
+            files[activeFileIndex].code = codeInput.value;
+            
+            const projectName = document.getElementById('projectName').value || 'Project';
+            const parsedModules = files
+                .filter(f => f.code.trim())
+                .map(f => parsePythonCode(f.code, f.name));
+
+            if (parsedModules.length === 0) {
+                alert('Please add some Python code first!');
+                return;
+            }
+
+            const hierarchy = buildHierarchy(projectName, parsedModules);
+            renderTree(hierarchy);
+        });
+
+        // =============================================
+        // Load Example
+        // =============================================
+        document.getElementById('loadExampleBtn').addEventListener('click', () => {
+            // Quiz Project example
+            files.length = 0;
+            files.push(
+                {
+                    name: 'data.py',
+                    code: `# Question data for the quiz
+question_data = [
+    {"text": "A slug's blood is green.", "answer": "True"},
+    {"text": "The longest war lasted 335 years.", "answer": "True"},
+    {"text": "Pigs can look up into the sky.", "answer": "False"},
+]`
+                },
+                {
+                    name: 'question_model.py',
+                    code: `class Question:
+    def __init__(self, q_text, q_answer):
+        self.text = q_text
+        self.answer = q_answer`
+                },
+                {
+                    name: 'quiz_brain.py',
+                    code: `class QuizBrain:
+    def __init__(self, q_list):
+        self.question_number = 0
+        self.question_list = q_list
+        self.score = 0
+    
+    def still_has_questions(self):
+        return self.question_number < len(self.question_list)
+    
+    def next_question(self):
+        current_question = self.question_list[self.question_number]
+        self.question_number += 1
+        user_answer = input(f"Q.{self.question_number}: {current_question.text} (True/False): ")
+        self.check_answer(user_answer, current_question.answer)
+    
+    def check_answer(self, user_answer, correct_answer):
+        if user_answer.lower() == correct_answer.lower():
+            self.score += 1
+            print("You got it right!")
+        else:
+            print("That's wrong.")`
+                },
+                {
+                    name: 'main.py',
+                    code: `from data import question_data
+from question_model import Question
+from quiz_brain import QuizBrain
+
+question_bank = []
+
+for item in question_data:
+    question = Question(item["text"], item["answer"])
+    question_bank.append(question)
+
+quiz = QuizBrain(question_bank)
+
+while quiz.still_has_questions():
+    quiz.next_question()
+
+print(f"Your final score: {quiz.score}/{quiz.question_number}")`
+                }
+            );
+
+            activeFileIndex = 0;
+            codeInput.value = files[0].code;
+            document.getElementById('projectName').value = 'Quiz Project';
+            renderFileTabs();
+        });
+
+        // =============================================
+        // Initialize
+        // =============================================
+        renderFileTabs();
+        initVisualization();
+
+        // Auto-load example on start
+        document.getElementById('loadExampleBtn').click();
+        setTimeout(() => {
+            document.getElementById('parseBtn').click();
+        }, 100);
+    </script>
+</body>
+</html>
