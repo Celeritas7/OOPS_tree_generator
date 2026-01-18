@@ -1,0 +1,2 @@
+Currently the tree is spreading the branches in same way as assembly tree project. But I don't want it same way for this project. It means I want to visualise the flow of logic so I want to see the blocks being generated in a sequence. For example as you can see in the attached image the blocks are generated as they are written inside the .py file. And in currently generated layout it cant be understood right.
+
