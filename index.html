@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Python OOP Structure Visualizer</title>
+    <title>Python OOP Structure Visualizer - Sequential Flow</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
     <style>
         * {
@@ -14,8 +14,8 @@
 
         body {
             font-family: 'Segoe UI', system-ui, sans-serif;
-            background: #1a1a2e;
-            color: #eee;
+            background: #f5f5f5;
+            color: #333;
             min-height: 100vh;
         }
 
@@ -26,49 +26,54 @@
 
         /* Left Panel - Code Input */
         .input-panel {
-            width: 400px;
-            background: #16213e;
+            width: 380px;
+            background: #fff;
             padding: 20px;
             display: flex;
             flex-direction: column;
-            border-right: 1px solid #0f3460;
+            border-right: 1px solid #ddd;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
         }
 
         .input-panel h2 {
-            color: #e94560;
+            color: #2c3e50;
             margin-bottom: 15px;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .file-tabs {
             display: flex;
-            gap: 5px;
+            gap: 4px;
             margin-bottom: 10px;
             flex-wrap: wrap;
         }
 
         .file-tab {
-            padding: 8px 15px;
-            background: #0f3460;
-            border: none;
-            color: #aaa;
+            padding: 6px 12px;
+            background: #ecf0f1;
+            border: 1px solid #bdc3c7;
+            color: #7f8c8d;
             cursor: pointer;
-            border-radius: 5px 5px 0 0;
-            font-size: 0.85rem;
+            border-radius: 4px 4px 0 0;
+            font-size: 0.8rem;
             transition: all 0.2s;
         }
 
         .file-tab:hover {
-            background: #1a4a7a;
+            background: #d5dbdb;
         }
 
         .file-tab.active {
-            background: #e94560;
+            background: #3498db;
+            border-color: #2980b9;
             color: white;
         }
 
         .file-tab .remove {
-            margin-left: 8px;
+            margin-left: 6px;
             opacity: 0.6;
         }
 
@@ -77,74 +82,94 @@
         }
 
         .add-file-btn {
-            padding: 8px 15px;
+            padding: 6px 12px;
             background: transparent;
-            border: 1px dashed #0f3460;
-            color: #666;
+            border: 1px dashed #bdc3c7;
+            color: #95a5a6;
             cursor: pointer;
-            border-radius: 5px;
-            font-size: 0.85rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
         }
 
         .add-file-btn:hover {
-            border-color: #e94560;
-            color: #e94560;
+            border-color: #3498db;
+            color: #3498db;
+        }
+
+        .project-name-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .project-name-input {
+            flex: 1;
+            padding: 8px 12px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        .project-name-input:focus {
+            outline: none;
+            border-color: #3498db;
         }
 
         .code-input {
             flex: 1;
-            background: #0d1b2a;
-            border: 1px solid #0f3460;
-            border-radius: 8px;
-            padding: 15px;
-            color: #a8dadc;
+            background: #2c3e50;
+            border: 1px solid #34495e;
+            border-radius: 6px;
+            padding: 12px;
+            color: #ecf0f1;
             font-family: 'Fira Code', 'Consolas', monospace;
-            font-size: 13px;
+            font-size: 12px;
             resize: none;
             line-height: 1.5;
         }
 
         .code-input:focus {
             outline: none;
-            border-color: #e94560;
+            border-color: #3498db;
         }
 
         .btn-row {
             display: flex;
-            gap: 10px;
-            margin-top: 15px;
+            gap: 8px;
+            margin-top: 12px;
         }
 
         .parse-btn {
             flex: 1;
-            padding: 12px 20px;
-            background: linear-gradient(135deg, #e94560, #c73659);
+            padding: 10px 16px;
+            background: #27ae60;
             border: none;
-            border-radius: 8px;
+            border-radius: 6px;
             color: white;
             font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: all 0.2s;
         }
 
         .parse-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(233, 69, 96, 0.4);
+            background: #219a52;
         }
 
         .load-example-btn {
-            padding: 12px 20px;
-            background: #0f3460;
-            border: none;
-            border-radius: 8px;
-            color: #aaa;
+            padding: 10px 16px;
+            background: #ecf0f1;
+            border: 1px solid #bdc3c7;
+            border-radius: 6px;
+            color: #7f8c8d;
             cursor: pointer;
             transition: all 0.2s;
         }
 
         .load-example-btn:hover {
-            background: #1a4a7a;
-            color: white;
+            background: #d5dbdb;
+            color: #2c3e50;
         }
 
         /* Right Panel - Visualization */
@@ -152,30 +177,37 @@
             flex: 1;
             position: relative;
             overflow: hidden;
+            background: #fff;
+            background-image: 
+                linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
         }
 
         .viz-controls {
             position: absolute;
-            top: 20px;
-            right: 20px;
+            top: 15px;
+            right: 15px;
             display: flex;
-            gap: 10px;
+            gap: 8px;
             z-index: 100;
         }
 
         .viz-controls button {
-            padding: 8px 15px;
-            background: rgba(15, 52, 96, 0.9);
-            border: 1px solid #0f3460;
-            border-radius: 5px;
-            color: #aaa;
+            padding: 6px 12px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            color: #666;
             cursor: pointer;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
+            transition: all 0.2s;
         }
 
         .viz-controls button:hover {
-            background: #1a4a7a;
-            color: white;
+            background: #f8f9fa;
+            border-color: #3498db;
+            color: #3498db;
         }
 
         #visualization {
@@ -183,189 +215,84 @@
             height: 100%;
         }
 
-        /* Node Styles */
-        .node-group {
-            cursor: pointer;
-        }
-
-        .node-project rect {
-            fill: #4361ee;
-            stroke: #3a56d4;
-            stroke-width: 2;
-            rx: 8;
-        }
-
-        .node-module rect {
-            fill: #fca311;
-            stroke: #e09300;
-            stroke-width: 2;
-            rx: 6;
-        }
-
-        .node-class ellipse {
-            fill: #06d6a0;
-            stroke: #05b588;
-            stroke-width: 2;
-        }
-
-        .node-method polygon {
-            fill: #ef476f;
-            stroke: #d63d5f;
-            stroke-width: 2;
-        }
-
-        .node-variable rect {
-            fill: #9d4edd;
-            stroke: #8b3dc9;
-            stroke-width: 1.5;
-            rx: 3;
-        }
-
-        .node-data rect {
-            fill: #577590;
-            stroke: #456070;
-            stroke-width: 2;
-            rx: 4;
-        }
-
-        .node-loop polygon {
-            fill: #ffd166;
-            stroke: #e6b84d;
-            stroke-width: 2;
-        }
-
-        .node-instantiation rect {
-            fill: #118ab2;
-            stroke: #0e7499;
-            stroke-width: 2;
-            rx: 5;
-        }
-
-        .node-text {
-            font-family: 'Segoe UI', sans-serif;
-            fill: white;
-            text-anchor: middle;
-            dominant-baseline: middle;
-            pointer-events: none;
-        }
-
-        .node-text-dark {
-            fill: #1a1a2e;
-        }
-
-        .link {
-            fill: none;
-            stroke: #4a5568;
-            stroke-width: 1.5;
-        }
-
-        .link-uses {
-            stroke: #e94560;
-            stroke-dasharray: 5, 3;
-            stroke-width: 1.5;
-        }
-
         /* Legend */
         .legend {
             position: absolute;
-            bottom: 20px;
-            left: 20px;
-            background: rgba(22, 33, 62, 0.95);
-            padding: 15px 20px;
-            border-radius: 10px;
-            border: 1px solid #0f3460;
+            bottom: 15px;
+            left: 15px;
+            background: rgba(255,255,255,0.95);
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
 
         .legend h4 {
-            color: #e94560;
-            margin-bottom: 10px;
-            font-size: 0.9rem;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
         }
 
         .legend-item {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 6px;
-            font-size: 0.8rem;
-            color: #aaa;
+            gap: 8px;
+            margin-bottom: 4px;
+            font-size: 0.75rem;
+            color: #666;
         }
 
         .legend-shape {
-            width: 24px;
-            height: 16px;
-            border-radius: 3px;
+            width: 20px;
+            height: 14px;
+            border-radius: 2px;
         }
 
         /* Tooltip */
         .tooltip {
             position: absolute;
-            background: rgba(22, 33, 62, 0.95);
-            border: 1px solid #e94560;
-            border-radius: 8px;
-            padding: 12px 15px;
+            background: rgba(44, 62, 80, 0.95);
+            border-radius: 6px;
+            padding: 10px 12px;
             pointer-events: none;
             opacity: 0;
             transition: opacity 0.2s;
-            max-width: 300px;
+            max-width: 280px;
             z-index: 1000;
+            color: #ecf0f1;
         }
 
         .tooltip h4 {
-            color: #e94560;
-            margin-bottom: 5px;
+            color: #3498db;
+            margin-bottom: 4px;
+            font-size: 0.9rem;
         }
 
         .tooltip p {
-            color: #aaa;
-            font-size: 0.85rem;
-            margin: 3px 0;
+            font-size: 0.8rem;
+            margin: 2px 0;
         }
 
         .tooltip code {
-            background: #0d1b2a;
-            padding: 2px 6px;
+            background: rgba(0,0,0,0.3);
+            padding: 1px 5px;
             border-radius: 3px;
             font-family: 'Fira Code', monospace;
-            font-size: 0.8rem;
-            color: #a8dadc;
+            font-size: 0.75rem;
         }
 
-        /* Project name input */
-        .project-name-row {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .project-name-input {
-            flex: 1;
-            padding: 10px 15px;
-            background: #0d1b2a;
-            border: 1px solid #0f3460;
-            border-radius: 5px;
-            color: #e94560;
-            font-weight: 600;
-        }
-
-        .project-name-input:focus {
-            outline: none;
-            border-color: #e94560;
-        }
-
-        /* Instructions */
         .instructions {
-            margin-top: 15px;
-            padding: 12px;
-            background: rgba(233, 69, 96, 0.1);
-            border-radius: 8px;
-            font-size: 0.8rem;
-            color: #aaa;
-            line-height: 1.6;
+            margin-top: 12px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            color: #7f8c8d;
+            line-height: 1.5;
         }
 
         .instructions strong {
-            color: #e94560;
+            color: #2c3e50;
         }
     </style>
 </head>
@@ -380,33 +307,29 @@
             
             <div class="file-tabs" id="fileTabs">
                 <button class="file-tab active" data-file="0">data.py</button>
-                <button class="file-tab" data-file="1">question_model.py</button>
-                <button class="file-tab" data-file="2">quiz_brain.py</button>
-                <button class="file-tab" data-file="3">main.py</button>
                 <button class="add-file-btn" id="addFileBtn">+ Add</button>
             </div>
             
             <textarea class="code-input" id="codeInput" placeholder="Paste your Python code here..."></textarea>
             
             <div class="btn-row">
-                <button class="parse-btn" id="parseBtn">📊 Generate Diagram</button>
+                <button class="parse-btn" id="parseBtn">▶ Generate Diagram</button>
                 <button class="load-example-btn" id="loadExampleBtn">Load Example</button>
             </div>
             
             <div class="instructions">
-                <strong>How to use:</strong><br>
-                1. Add your Python files using tabs<br>
-                2. Paste code into each file tab<br>
-                3. Click "Generate Diagram" to visualize<br>
-                4. Drag to pan, scroll to zoom
+                <strong>Sequential Flow Layout:</strong><br>
+                • Modules as vertical columns<br>
+                • Elements flow top-to-bottom in code order<br>
+                • Methods/variables branch to the right
             </div>
         </div>
         
         <div class="viz-panel">
             <div class="viz-controls">
-                <button id="zoomIn">Zoom +</button>
-                <button id="zoomOut">Zoom −</button>
-                <button id="resetView">Reset View</button>
+                <button id="zoomIn">+</button>
+                <button id="zoomOut">−</button>
+                <button id="resetView">Reset</button>
                 <button id="exportSVG">Export SVG</button>
             </div>
             
@@ -415,32 +338,32 @@
             <div class="legend">
                 <h4>Legend</h4>
                 <div class="legend-item">
-                    <div class="legend-shape" style="background: #4361ee;"></div>
+                    <div class="legend-shape" style="background: #dae8fc; border: 1px solid #6c8ebf;"></div>
                     <span>Project</span>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-shape" style="background: #fca311;"></div>
-                    <span>Module (file)</span>
+                    <div class="legend-shape" style="background: #fff2cc; border: 1px solid #d6b656;"></div>
+                    <span>Module</span>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-shape" style="background: #06d6a0; border-radius: 50%;"></div>
+                    <div class="legend-shape" style="background: #d5e8d4; border: 1px solid #82b366; border-radius: 50%;"></div>
                     <span>Class</span>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-shape" style="background: #ef476f; clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);"></div>
-                    <span>Method / Function</span>
+                    <div class="legend-shape" style="background: #f8cecc; border: 1px solid #b85450;"></div>
+                    <span>Method</span>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-shape" style="background: #9d4edd;"></div>
-                    <span>Variable / Attribute</span>
+                    <div class="legend-shape" style="background: #e1d5e7; border: 1px solid #9673a6;"></div>
+                    <span>Variable</span>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-shape" style="background: #577590;"></div>
-                    <span>Data (dict/list)</span>
+                    <div class="legend-shape" style="background: #f5f5f5; border: 1px solid #666;"></div>
+                    <span>Data / List</span>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-shape" style="background: #118ab2;"></div>
-                    <span>Instantiation</span>
+                    <div class="legend-shape" style="background: #fff2cc; border: 1px solid #d6b656;"></div>
+                    <span>Loop / Instantiation</span>
                 </div>
             </div>
             
@@ -449,6 +372,52 @@
     </div>
 
     <script>
+        // =============================================
+        // Configuration - Matching draw.io style
+        // =============================================
+        const CONFIG = {
+            // Project block
+            project: { w: 160, h: 45 },
+            
+            // Module blocks
+            module: { w: 140, h: 35, gapX: 280 },
+            
+            // Class blocks (ellipse)
+            class: { w: 140, h: 45 },
+            
+            // Method blocks (hexagon)
+            method: { w: 130, h: 35, offsetX: 100, gapY: 15 },
+            
+            // Variable blocks
+            variable: { w: 120, h: 24, offsetX: 90, gapY: 8 },
+            
+            // Data blocks
+            data: { w: 110, h: 40, gapY: 15 },
+            
+            // Loop blocks
+            loop: { w: 100, h: 35, offsetX: 120, gapY: 15 },
+            
+            // Instantiation blocks
+            instantiation: { w: 180, h: 30, gapY: 15 },
+            
+            // Vertical spacing
+            verticalGap: 20,
+            moduleStartY: 120,
+            
+            // Colors matching draw.io
+            colors: {
+                project: { fill: '#dae8fc', stroke: '#6c8ebf' },
+                module: { fill: '#fff2cc', stroke: '#d6b656' },
+                class: { fill: '#d5e8d4', stroke: '#82b366' },
+                method: { fill: '#f8cecc', stroke: '#b85450' },
+                variable: { fill: '#e1d5e7', stroke: '#9673a6' },
+                data: { fill: '#f5f5f5', stroke: '#666666' },
+                loop: { fill: '#fff2cc', stroke: '#d6b656' },
+                instantiation: { fill: '#fff2cc', stroke: '#d6b656' },
+                link: '#666'
+            }
+        };
+
         // =============================================
         // File Management
         // =============================================
@@ -506,40 +475,45 @@
         });
 
         // =============================================
-        // Python Parser (Simplified AST-like parsing)
+        // Python Parser
         // =============================================
         function parsePythonCode(code, moduleName) {
             const result = {
                 name: moduleName,
-                classes: [],
-                functions: [],
-                data: [],
-                lists: [],
-                instantiations: [],
-                loops: [],
-                imports: []
+                elements: [] // Sequential list of elements in code order
             };
 
             const lines = code.split('\n');
             let currentClass = null;
             let currentMethod = null;
-            let classIndent = 0;
-            let methodIndent = 0;
+            let classIndent = -1;
+            let methodIndent = -1;
 
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i];
                 const trimmed = line.trim();
                 const indent = line.search(/\S/);
+                if (indent === -1) continue; // Empty line
 
-                // Skip empty lines and comments
-                if (!trimmed || trimmed.startsWith('#')) continue;
+                // Skip comments
+                if (trimmed.startsWith('#')) continue;
 
-                // Parse imports
+                // Check if we've exited a class
+                if (currentClass && indent <= classIndent && trimmed && !trimmed.startsWith('#')) {
+                    currentClass = null;
+                    currentMethod = null;
+                    classIndent = -1;
+                    methodIndent = -1;
+                }
+
+                // Check if we've exited a method
+                if (currentMethod && indent <= methodIndent && trimmed && !trimmed.startsWith('def ')) {
+                    currentMethod = null;
+                    methodIndent = -1;
+                }
+
+                // Parse imports (skip for visualization)
                 if (trimmed.startsWith('import ') || trimmed.startsWith('from ')) {
-                    const match = trimmed.match(/(?:from\s+(\w+)|import\s+(\w+))/);
-                    if (match) {
-                        result.imports.push(match[1] || match[2]);
-                    }
                     continue;
                 }
 
@@ -547,20 +521,15 @@
                 const classMatch = trimmed.match(/^class\s+(\w+)(?:\(.*\))?:/);
                 if (classMatch) {
                     currentClass = {
+                        type: 'class',
                         name: classMatch[1],
-                        methods: [],
-                        initVars: []
+                        methods: []
                     };
-                    result.classes.push(currentClass);
+                    result.elements.push(currentClass);
                     classIndent = indent;
                     currentMethod = null;
+                    methodIndent = -1;
                     continue;
-                }
-
-                // Check if we're still inside a class
-                if (currentClass && indent <= classIndent && trimmed && !trimmed.startsWith('class ')) {
-                    currentClass = null;
-                    currentMethod = null;
                 }
 
                 // Parse method definitions (inside class)
@@ -568,6 +537,7 @@
                     const methodMatch = trimmed.match(/^def\s+(\w+)\s*\(/);
                     if (methodMatch) {
                         currentMethod = {
+                            type: 'method',
                             name: methodMatch[1],
                             variables: []
                         };
@@ -576,80 +546,97 @@
                         continue;
                     }
 
-                    // Check if still inside method
-                    if (currentMethod && indent <= methodIndent && !trimmed.startsWith('def ')) {
-                        currentMethod = null;
-                    }
-
                     // Parse self.x assignments in __init__
-                    if (currentMethod && currentMethod.name === '__init__') {
+                    if (currentMethod) {
                         const selfMatch = trimmed.match(/self\.(\w+)\s*=/);
-                        if (selfMatch && !currentClass.initVars.includes(selfMatch[1])) {
-                            currentClass.initVars.push(selfMatch[1]);
+                        if (selfMatch) {
+                            const varName = currentMethod.name === '__init__' 
+                                ? `self.${selfMatch[1]}` 
+                                : `self.${selfMatch[1]}`;
+                            if (!currentMethod.variables.includes(varName)) {
+                                currentMethod.variables.push(varName);
+                            }
+                            continue;
                         }
-                    }
 
-                    // Parse local variables in methods
-                    if (currentMethod && currentMethod.name !== '__init__') {
+                        // Parse local variables
                         const varMatch = trimmed.match(/^(\w+)\s*=\s*(?!.*def\s)/);
                         if (varMatch && !['self', '_', 'True', 'False', 'None'].includes(varMatch[1])) {
                             if (!currentMethod.variables.includes(varMatch[1])) {
                                 currentMethod.variables.push(varMatch[1]);
                             }
                         }
-                        // Also catch self.x in non-init methods
-                        const selfVarMatch = trimmed.match(/self\.(\w+)\s*=/);
-                        if (selfVarMatch) {
-                            const varName = `self.${selfVarMatch[1]}`;
-                            if (!currentMethod.variables.includes(varName)) {
-                                currentMethod.variables.push(varName);
-                            }
-                        }
                     }
                     continue;
                 }
 
-                // Parse standalone functions (outside class)
-                const funcMatch = trimmed.match(/^def\s+(\w+)\s*\(/);
-                if (funcMatch && !currentClass) {
-                    result.functions.push({
-                        name: funcMatch[1],
-                        variables: []
+                // Parse standalone data structures at module level
+                const dictMatch = trimmed.match(/^(\w+)\s*=\s*[\[{]/);
+                if (dictMatch) {
+                    result.elements.push({
+                        type: 'data',
+                        name: dictMatch[1],
+                        isDict: trimmed.includes('{') || trimmed.includes('dict(')
                     });
                     continue;
                 }
 
-                // Parse data structures (dicts and lists)
-                const dictMatch = trimmed.match(/^(\w+)\s*=\s*[\[{]/);
-                if (dictMatch && !currentClass && !currentMethod) {
-                    if (trimmed.includes('{') || trimmed.includes('dict(')) {
-                        result.data.push(dictMatch[1]);
-                    } else if (trimmed.includes('[')) {
-                        result.lists.push(dictMatch[1]);
-                    }
+                // Parse list comprehensions or empty lists that become populated
+                const listMatch = trimmed.match(/^(\w+)\s*=\s*\[\]/);
+                if (listMatch) {
+                    result.elements.push({
+                        type: 'data',
+                        name: listMatch[1],
+                        isDict: false
+                    });
                     continue;
                 }
 
-                // Parse instantiations
-                const instMatch = trimmed.match(/^(\w+)\s*=\s*(\w+)\s*\((.*)\)/);
+                // Parse loops at module level
+                if (trimmed.startsWith('for ')) {
+                    const forMatch = trimmed.match(/^for\s+(.+?)\s+in\s+(.+?):/);
+                    result.elements.push({
+                        type: 'loop',
+                        loopType: 'For',
+                        condition: forMatch ? `${forMatch[1]} in ${forMatch[2]}` : trimmed
+                    });
+                    continue;
+                }
+
+                if (trimmed.startsWith('while ')) {
+                    const whileMatch = trimmed.match(/^while\s+(.+?):/);
+                    result.elements.push({
+                        type: 'loop',
+                        loopType: 'While',
+                        condition: whileMatch ? whileMatch[1] : trimmed
+                    });
+                    continue;
+                }
+
+                // Parse instantiations at module level
+                const instMatch = trimmed.match(/^(\w+)\s*=\s*(\w+)\s*\((.*)?\)/);
                 if (instMatch && !currentClass) {
                     const className = instMatch[2];
                     // Check if it looks like a class instantiation (capitalized)
                     if (className[0] === className[0].toUpperCase() && className[0] !== className[0].toLowerCase()) {
-                        result.instantiations.push({
+                        result.elements.push({
+                            type: 'instantiation',
                             variable: instMatch[1],
                             className: className,
-                            args: instMatch[3]
+                            args: instMatch[3] || ''
                         });
                         continue;
                     }
                 }
 
-                // Parse loops
-                if (trimmed.startsWith('for ') && !currentClass) {
-                    result.loops.push({ type: 'for', condition: trimmed });
-                } else if (trimmed.startsWith('while ') && !currentClass) {
-                    result.loops.push({ type: 'while', condition: trimmed });
+                // Parse standalone function definitions at module level
+                const funcMatch = trimmed.match(/^def\s+(\w+)\s*\(/);
+                if (funcMatch && !currentClass) {
+                    result.elements.push({
+                        type: 'function',
+                        name: funcMatch[1]
+                    });
+                    continue;
                 }
             }
 
@@ -657,130 +644,7 @@
         }
 
         // =============================================
-        // Build Hierarchical Structure
-        // =============================================
-        function buildHierarchy(projectName, modules) {
-            const root = {
-                id: 'project',
-                name: projectName,
-                type: 'project',
-                children: []
-            };
-
-            modules.forEach((moduleData, idx) => {
-                const moduleNode = {
-                    id: `module_${idx}`,
-                    name: moduleData.name.replace('.py', ''),
-                    type: 'module',
-                    children: []
-                };
-
-                // Add data structures
-                moduleData.data.forEach((d, i) => {
-                    moduleNode.children.push({
-                        id: `${moduleNode.id}_data_${i}`,
-                        name: d,
-                        type: 'data',
-                        children: []
-                    });
-                });
-
-                // Add lists
-                moduleData.lists.forEach((l, i) => {
-                    moduleNode.children.push({
-                        id: `${moduleNode.id}_list_${i}`,
-                        name: l,
-                        type: 'data',
-                        children: []
-                    });
-                });
-
-                // Add classes
-                moduleData.classes.forEach((cls, i) => {
-                    const classNode = {
-                        id: `${moduleNode.id}_class_${i}`,
-                        name: cls.name,
-                        type: 'class',
-                        children: []
-                    };
-
-                    // Add methods
-                    cls.methods.forEach((method, j) => {
-                        const methodNode = {
-                            id: `${classNode.id}_method_${j}`,
-                            name: method.name,
-                            type: 'method',
-                            children: []
-                        };
-
-                        // Add variables for this method
-                        if (method.name === '__init__') {
-                            cls.initVars.forEach((v, k) => {
-                                methodNode.children.push({
-                                    id: `${methodNode.id}_var_${k}`,
-                                    name: `self.${v}`,
-                                    type: 'variable',
-                                    children: []
-                                });
-                            });
-                        } else {
-                            method.variables.forEach((v, k) => {
-                                methodNode.children.push({
-                                    id: `${methodNode.id}_var_${k}`,
-                                    name: v,
-                                    type: 'variable',
-                                    children: []
-                                });
-                            });
-                        }
-
-                        classNode.children.push(methodNode);
-                    });
-
-                    moduleNode.children.push(classNode);
-                });
-
-                // Add standalone functions
-                moduleData.functions.forEach((func, i) => {
-                    moduleNode.children.push({
-                        id: `${moduleNode.id}_func_${i}`,
-                        name: func.name,
-                        type: 'method',
-                        children: []
-                    });
-                });
-
-                // Add instantiations
-                moduleData.instantiations.forEach((inst, i) => {
-                    moduleNode.children.push({
-                        id: `${moduleNode.id}_inst_${i}`,
-                        name: `${inst.variable} = ${inst.className}(${inst.args})`,
-                        shortName: inst.variable,
-                        className: inst.className,
-                        type: 'instantiation',
-                        children: []
-                    });
-                });
-
-                // Add loops
-                moduleData.loops.forEach((loop, i) => {
-                    moduleNode.children.push({
-                        id: `${moduleNode.id}_loop_${i}`,
-                        name: loop.type.charAt(0).toUpperCase() + loop.type.slice(1),
-                        condition: loop.condition,
-                        type: 'loop',
-                        children: []
-                    });
-                });
-
-                root.children.push(moduleNode);
-            });
-
-            return root;
-        }
-
-        // =============================================
-        // D3 Visualization
+        // D3 Visualization - Sequential Flow Layout
         // =============================================
         const svg = d3.select('#visualization');
         const tooltip = d3.select('#tooltip');
@@ -794,19 +658,21 @@
             svg.attr('width', width).attr('height', height);
             svg.selectAll('*').remove();
 
-            // Add defs for arrow markers
+            // Add defs for markers and filters
             const defs = svg.append('defs');
+            
+            // Arrow marker
             defs.append('marker')
                 .attr('id', 'arrowhead')
                 .attr('viewBox', '-0 -5 10 10')
                 .attr('refX', 8)
                 .attr('refY', 0)
                 .attr('orient', 'auto')
-                .attr('markerWidth', 6)
-                .attr('markerHeight', 6)
+                .attr('markerWidth', 5)
+                .attr('markerHeight', 5)
                 .append('path')
-                .attr('d', 'M 0,-5 L 10,0 L 0,5')
-                .attr('fill', '#4a5568');
+                .attr('d', 'M 0,-4 L 8,0 L 0,4')
+                .attr('fill', CONFIG.colors.link);
 
             g = svg.append('g');
 
@@ -819,249 +685,475 @@
             svg.call(zoom);
         }
 
-        function renderTree(data) {
+        function renderSequentialFlow(projectName, modules) {
             initVisualization();
 
             const width = svg.node().parentElement.clientWidth;
-            const height = svg.node().parentElement.clientHeight;
+            const nodes = [];
+            const links = [];
 
-            // Create tree layout
-            const treeLayout = d3.tree()
-                .nodeSize([200, 120])
-                .separation((a, b) => {
-                    // More separation for different parents
-                    if (a.parent !== b.parent) return 1.5;
-                    // More space for nodes with many children
-                    const maxChildren = Math.max(
-                        a.children ? a.children.length : 0,
-                        b.children ? b.children.length : 0
-                    );
-                    return 1 + maxChildren * 0.1;
+            // Calculate column widths based on content
+            const columnWidths = [];
+            modules.forEach((mod, idx) => {
+                let maxWidth = CONFIG.module.w;
+                mod.elements.forEach(el => {
+                    if (el.type === 'class') {
+                        // Class + methods + variables width
+                        const methodWidth = CONFIG.method.offsetX + CONFIG.method.w;
+                        const varWidth = CONFIG.method.offsetX + CONFIG.variable.offsetX + CONFIG.variable.w;
+                        maxWidth = Math.max(maxWidth, varWidth + 40);
+                    }
+                    if (el.type === 'loop') {
+                        maxWidth = Math.max(maxWidth, CONFIG.loop.offsetX + CONFIG.loop.w + 20);
+                    }
+                    if (el.type === 'instantiation') {
+                        maxWidth = Math.max(maxWidth, CONFIG.instantiation.w + 20);
+                    }
                 });
+                columnWidths.push(maxWidth);
+            });
 
-            const root = d3.hierarchy(data);
-            treeLayout(root);
+            // Calculate column X positions
+            const columnX = [];
+            let currentX = 60;
+            columnWidths.forEach((w, i) => {
+                columnX.push(currentX);
+                currentX += w + 40;
+            });
+            const totalWidth = currentX;
 
-            // Center the tree
-            const nodes = root.descendants();
-            const xExtent = d3.extent(nodes, d => d.x);
-            const yExtent = d3.extent(nodes, d => d.y);
-            const treeWidth = xExtent[1] - xExtent[0];
-            const treeHeight = yExtent[1] - yExtent[0];
+            // Create project node
+            const projectNode = {
+                id: 'project',
+                type: 'project',
+                name: projectName,
+                x: 60 + (totalWidth - 60) / 2,
+                y: 30,
+                w: CONFIG.project.w,
+                h: CONFIG.project.h
+            };
+            nodes.push(projectNode);
 
-            // Initial transform to center
-            const initialScale = Math.min(
-                (width - 100) / (treeWidth + 400),
-                (height - 100) / (treeHeight + 200),
-                1
-            );
-            const tx = width / 2 - (xExtent[0] + treeWidth / 2) * initialScale;
-            const ty = 80;
+            // Process each module
+            modules.forEach((mod, modIdx) => {
+                const modX = columnX[modIdx];
+                let curY = CONFIG.moduleStartY;
 
-            svg.call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(initialScale));
+                // Module node
+                const moduleNode = {
+                    id: `mod_${modIdx}`,
+                    type: 'module',
+                    name: mod.name.replace('.py', ''),
+                    x: modX,
+                    y: curY,
+                    w: CONFIG.module.w,
+                    h: CONFIG.module.h
+                };
+                nodes.push(moduleNode);
+                links.push({ source: projectNode.id, target: moduleNode.id, type: 'centered' });
+
+                curY += CONFIG.module.h + CONFIG.verticalGap;
+                let lastCenteredNode = moduleNode;
+
+                // Process elements in sequence
+                mod.elements.forEach((el, elIdx) => {
+                    if (el.type === 'data') {
+                        const dataNode = {
+                            id: `mod_${modIdx}_data_${elIdx}`,
+                            type: 'data',
+                            name: el.name,
+                            x: modX + (CONFIG.module.w - CONFIG.data.w) / 2,
+                            y: curY,
+                            w: CONFIG.data.w,
+                            h: CONFIG.data.h,
+                            isDict: el.isDict
+                        };
+                        nodes.push(dataNode);
+                        links.push({ source: lastCenteredNode.id, target: dataNode.id, type: 'centered' });
+                        lastCenteredNode = dataNode;
+                        curY += CONFIG.data.h + CONFIG.data.gapY;
+                    }
+                    else if (el.type === 'class') {
+                        // Class node (centered under module)
+                        const classNode = {
+                            id: `mod_${modIdx}_class_${elIdx}`,
+                            type: 'class',
+                            name: el.name,
+                            x: modX + (CONFIG.module.w - CONFIG.class.w) / 2,
+                            y: curY,
+                            w: CONFIG.class.w,
+                            h: CONFIG.class.h
+                        };
+                        nodes.push(classNode);
+                        links.push({ source: lastCenteredNode.id, target: classNode.id, type: 'centered' });
+
+                        // Methods (offset to the right)
+                        let methodY = curY + CONFIG.class.h + CONFIG.method.gapY;
+                        const methodX = modX + CONFIG.method.offsetX;
+
+                        el.methods.forEach((method, mIdx) => {
+                            const methodNode = {
+                                id: `mod_${modIdx}_class_${elIdx}_method_${mIdx}`,
+                                type: 'method',
+                                name: method.name,
+                                x: methodX,
+                                y: methodY,
+                                w: CONFIG.method.w,
+                                h: CONFIG.method.h
+                            };
+                            nodes.push(methodNode);
+                            links.push({ source: classNode.id, target: methodNode.id, type: 'offset' });
+
+                            // Variables (offset further right)
+                            let varY = methodY + CONFIG.method.h + CONFIG.variable.gapY;
+                            const varX = methodX + CONFIG.variable.offsetX;
+
+                            method.variables.forEach((varName, vIdx) => {
+                                const varNode = {
+                                    id: `mod_${modIdx}_class_${elIdx}_method_${mIdx}_var_${vIdx}`,
+                                    type: 'variable',
+                                    name: varName,
+                                    x: varX,
+                                    y: varY,
+                                    w: CONFIG.variable.w,
+                                    h: CONFIG.variable.h
+                                };
+                                nodes.push(varNode);
+                                links.push({ source: methodNode.id, target: varNode.id, type: 'offset' });
+                                varY += CONFIG.variable.h + CONFIG.variable.gapY;
+                            });
+
+                            // Update methodY for next method
+                            if (method.variables.length > 0) {
+                                methodY = varY + CONFIG.method.gapY;
+                            } else {
+                                methodY += CONFIG.method.h + CONFIG.method.gapY + 20;
+                            }
+                        });
+
+                        curY = methodY + 10;
+                        lastCenteredNode = classNode;
+                    }
+                    else if (el.type === 'loop') {
+                        // Loop node (offset to the right from last centered)
+                        const loopNode = {
+                            id: `mod_${modIdx}_loop_${elIdx}`,
+                            type: 'loop',
+                            name: el.loopType,
+                            condition: el.condition,
+                            x: modX + CONFIG.loop.offsetX,
+                            y: curY,
+                            w: CONFIG.loop.w,
+                            h: CONFIG.loop.h
+                        };
+                        nodes.push(loopNode);
+                        links.push({ source: lastCenteredNode.id, target: loopNode.id, type: 'offset' });
+                        curY += CONFIG.loop.h + CONFIG.loop.gapY;
+                    }
+                    else if (el.type === 'instantiation') {
+                        // Instantiation node (centered)
+                        const instText = `${el.variable} = ${el.className}(${el.args})`;
+                        const instNode = {
+                            id: `mod_${modIdx}_inst_${elIdx}`,
+                            type: 'instantiation',
+                            name: instText,
+                            shortName: el.variable,
+                            className: el.className,
+                            x: modX + (CONFIG.module.w - CONFIG.instantiation.w) / 2,
+                            y: curY,
+                            w: CONFIG.instantiation.w,
+                            h: CONFIG.instantiation.h
+                        };
+                        nodes.push(instNode);
+                        links.push({ source: lastCenteredNode.id, target: instNode.id, type: 'centered' });
+                        lastCenteredNode = instNode;
+                        curY += CONFIG.instantiation.h + CONFIG.instantiation.gapY;
+                    }
+                    else if (el.type === 'function') {
+                        // Standalone function (centered)
+                        const funcNode = {
+                            id: `mod_${modIdx}_func_${elIdx}`,
+                            type: 'method',
+                            name: el.name,
+                            x: modX + (CONFIG.module.w - CONFIG.method.w) / 2,
+                            y: curY,
+                            w: CONFIG.method.w,
+                            h: CONFIG.method.h
+                        };
+                        nodes.push(funcNode);
+                        links.push({ source: lastCenteredNode.id, target: funcNode.id, type: 'centered' });
+                        lastCenteredNode = funcNode;
+                        curY += CONFIG.method.h + CONFIG.method.gapY;
+                    }
+                });
+            });
+
+            // Create node lookup
+            const nodeMap = {};
+            nodes.forEach(n => nodeMap[n.id] = n);
 
             // Draw links
-            const links = g.selectAll('.link')
-                .data(root.links())
+            const linkElements = g.selectAll('.link')
+                .data(links)
                 .enter()
                 .append('path')
                 .attr('class', 'link')
-                .attr('d', d3.linkVertical()
-                    .x(d => d.x)
-                    .y(d => d.y)
-                )
-                .attr('marker-end', 'url(#arrowhead)');
+                .attr('fill', 'none')
+                .attr('stroke', CONFIG.colors.link)
+                .attr('stroke-width', 1.5)
+                .attr('marker-end', 'url(#arrowhead)')
+                .attr('d', d => {
+                    const source = nodeMap[d.source];
+                    const target = nodeMap[d.target];
+                    
+                    if (d.type === 'centered') {
+                        // Straight down
+                        const x1 = source.x + source.w / 2;
+                        const y1 = source.y + source.h;
+                        const x2 = target.x + target.w / 2;
+                        const y2 = target.y;
+                        
+                        return `M ${x1} ${y1} L ${x1} ${(y1 + y2) / 2} L ${x2} ${(y1 + y2) / 2} L ${x2} ${y2}`;
+                    } else {
+                        // Offset - exit bottom, enter left
+                        const x1 = source.x + source.w / 2;
+                        const y1 = source.y + source.h;
+                        const x2 = target.x;
+                        const y2 = target.y + target.h / 2;
+                        
+                        const midY = y1 + 10;
+                        const midX = x2 - 15;
+                        
+                        return `M ${x1} ${y1} L ${x1} ${midY} L ${midX} ${midY} L ${midX} ${y2} L ${x2} ${y2}`;
+                    }
+                });
 
             // Draw nodes
             const nodeGroups = g.selectAll('.node-group')
                 .data(nodes)
                 .enter()
                 .append('g')
-                .attr('class', d => `node-group node-${d.data.type}`)
-                .attr('transform', d => `translate(${d.x}, ${d.y})`)
+                .attr('class', d => `node-group node-${d.type}`)
                 .on('mouseover', showTooltip)
                 .on('mouseout', hideTooltip);
 
-            // Render different node shapes based on type
             nodeGroups.each(function(d) {
                 const node = d3.select(this);
-                const nodeData = d.data;
+                const colors = CONFIG.colors[d.type] || CONFIG.colors.data;
 
-                switch(nodeData.type) {
+                switch(d.type) {
                     case 'project':
-                        drawProjectNode(node, nodeData);
+                        node.append('rect')
+                            .attr('x', d.x)
+                            .attr('y', d.y)
+                            .attr('width', d.w)
+                            .attr('height', d.h)
+                            .attr('rx', 8)
+                            .attr('fill', colors.fill)
+                            .attr('stroke', colors.stroke)
+                            .attr('stroke-width', 2);
+                        node.append('text')
+                            .attr('x', d.x + d.w / 2)
+                            .attr('y', d.y + d.h / 2)
+                            .attr('text-anchor', 'middle')
+                            .attr('dominant-baseline', 'middle')
+                            .attr('font-size', '16px')
+                            .attr('font-weight', 'bold')
+                            .attr('fill', '#333')
+                            .text(d.name);
                         break;
+
                     case 'module':
-                        drawModuleNode(node, nodeData);
+                        node.append('rect')
+                            .attr('x', d.x)
+                            .attr('y', d.y)
+                            .attr('width', d.w)
+                            .attr('height', d.h)
+                            .attr('rx', 5)
+                            .attr('fill', colors.fill)
+                            .attr('stroke', colors.stroke)
+                            .attr('stroke-width', 2);
+                        node.append('text')
+                            .attr('x', d.x + d.w / 2)
+                            .attr('y', d.y + d.h / 2)
+                            .attr('text-anchor', 'middle')
+                            .attr('dominant-baseline', 'middle')
+                            .attr('font-size', '13px')
+                            .attr('font-weight', '600')
+                            .attr('fill', '#333')
+                            .text(d.name);
                         break;
+
                     case 'class':
-                        drawClassNode(node, nodeData);
+                        node.append('ellipse')
+                            .attr('cx', d.x + d.w / 2)
+                            .attr('cy', d.y + d.h / 2)
+                            .attr('rx', d.w / 2)
+                            .attr('ry', d.h / 2)
+                            .attr('fill', colors.fill)
+                            .attr('stroke', colors.stroke)
+                            .attr('stroke-width', 2);
+                        // "class" keyword in blue
+                        node.append('text')
+                            .attr('x', d.x + d.w / 2)
+                            .attr('y', d.y + d.h / 2)
+                            .attr('text-anchor', 'middle')
+                            .attr('dominant-baseline', 'middle')
+                            .attr('font-size', '12px')
+                            .html(`<tspan fill="blue">class </tspan><tspan fill="#333">${d.name}</tspan>`);
                         break;
+
                     case 'method':
-                        drawMethodNode(node, nodeData);
+                        // Hexagon shape
+                        const hx = d.x, hy = d.y, hw = d.w, hh = d.h;
+                        const indent = hw * 0.15;
+                        const hexPoints = [
+                            [hx + indent, hy],
+                            [hx + hw - indent, hy],
+                            [hx + hw, hy + hh / 2],
+                            [hx + hw - indent, hy + hh],
+                            [hx + indent, hy + hh],
+                            [hx, hy + hh / 2]
+                        ];
+                        node.append('polygon')
+                            .attr('points', hexPoints.map(p => p.join(',')).join(' '))
+                            .attr('fill', colors.fill)
+                            .attr('stroke', colors.stroke)
+                            .attr('stroke-width', 2);
+                        node.append('text')
+                            .attr('x', d.x + d.w / 2)
+                            .attr('y', d.y + d.h / 2)
+                            .attr('text-anchor', 'middle')
+                            .attr('dominant-baseline', 'middle')
+                            .attr('font-size', '11px')
+                            .attr('fill', '#333')
+                            .text(d.name);
                         break;
+
                     case 'variable':
-                        drawVariableNode(node, nodeData);
+                        node.append('rect')
+                            .attr('x', d.x)
+                            .attr('y', d.y)
+                            .attr('width', d.w)
+                            .attr('height', d.h)
+                            .attr('rx', 2)
+                            .attr('fill', colors.fill)
+                            .attr('stroke', colors.stroke)
+                            .attr('stroke-width', 1.5);
+                        node.append('text')
+                            .attr('x', d.x + d.w / 2)
+                            .attr('y', d.y + d.h / 2)
+                            .attr('text-anchor', 'middle')
+                            .attr('dominant-baseline', 'middle')
+                            .attr('font-size', '10px')
+                            .attr('fill', '#333')
+                            .text(d.name);
                         break;
+
                     case 'data':
-                        drawDataNode(node, nodeData);
+                        // Cylinder-like shape for dicts, rectangle for lists
+                        if (d.isDict) {
+                            // Simplified cylinder
+                            node.append('rect')
+                                .attr('x', d.x)
+                                .attr('y', d.y + 5)
+                                .attr('width', d.w)
+                                .attr('height', d.h - 5)
+                                .attr('rx', 3)
+                                .attr('fill', colors.fill)
+                                .attr('stroke', colors.stroke)
+                                .attr('stroke-width', 1.5);
+                            node.append('ellipse')
+                                .attr('cx', d.x + d.w / 2)
+                                .attr('cy', d.y + 8)
+                                .attr('rx', d.w / 2)
+                                .attr('ry', 8)
+                                .attr('fill', colors.fill)
+                                .attr('stroke', colors.stroke)
+                                .attr('stroke-width', 1.5);
+                        } else {
+                            node.append('rect')
+                                .attr('x', d.x)
+                                .attr('y', d.y)
+                                .attr('width', d.w)
+                                .attr('height', d.h)
+                                .attr('rx', 4)
+                                .attr('fill', colors.fill)
+                                .attr('stroke', colors.stroke)
+                                .attr('stroke-width', 1.5);
+                        }
+                        node.append('text')
+                            .attr('x', d.x + d.w / 2)
+                            .attr('y', d.y + d.h / 2 + 3)
+                            .attr('text-anchor', 'middle')
+                            .attr('dominant-baseline', 'middle')
+                            .attr('font-size', '11px')
+                            .attr('fill', '#333')
+                            .text(d.name);
                         break;
-                    case 'instantiation':
-                        drawInstantiationNode(node, nodeData);
-                        break;
+
                     case 'loop':
-                        drawLoopNode(node, nodeData);
+                        // Parallelogram
+                        const lx = d.x, ly = d.y, lw = d.w, lh = d.h;
+                        const skew = 12;
+                        const paraPoints = [
+                            [lx + skew, ly],
+                            [lx + lw, ly],
+                            [lx + lw - skew, ly + lh],
+                            [lx, ly + lh]
+                        ];
+                        node.append('polygon')
+                            .attr('points', paraPoints.map(p => p.join(',')).join(' '))
+                            .attr('fill', colors.fill)
+                            .attr('stroke', colors.stroke)
+                            .attr('stroke-width', 2);
+                        node.append('text')
+                            .attr('x', d.x + d.w / 2)
+                            .attr('y', d.y + d.h / 2)
+                            .attr('text-anchor', 'middle')
+                            .attr('dominant-baseline', 'middle')
+                            .attr('font-size', '12px')
+                            .attr('font-weight', '600')
+                            .attr('fill', '#333')
+                            .text(d.name);
+                        break;
+
+                    case 'instantiation':
+                        node.append('rect')
+                            .attr('x', d.x)
+                            .attr('y', d.y)
+                            .attr('width', d.w)
+                            .attr('height', d.h)
+                            .attr('rx', 5)
+                            .attr('fill', colors.fill)
+                            .attr('stroke', colors.stroke)
+                            .attr('stroke-width', 2);
+                        node.append('text')
+                            .attr('x', d.x + d.w / 2)
+                            .attr('y', d.y + d.h / 2)
+                            .attr('text-anchor', 'middle')
+                            .attr('dominant-baseline', 'middle')
+                            .attr('font-size', '10px')
+                            .attr('fill', '#333')
+                            .text(d.name);
                         break;
                 }
             });
-        }
 
-        function drawProjectNode(node, data) {
-            node.append('rect')
-                .attr('x', -80)
-                .attr('y', -25)
-                .attr('width', 160)
-                .attr('height', 50)
-                .attr('rx', 8);
-
-            node.append('text')
-                .attr('class', 'node-text')
-                .attr('font-size', '16px')
-                .attr('font-weight', 'bold')
-                .text(data.name);
-        }
-
-        function drawModuleNode(node, data) {
-            node.append('rect')
-                .attr('x', -70)
-                .attr('y', -20)
-                .attr('width', 140)
-                .attr('height', 40)
-                .attr('rx', 6);
-
-            node.append('text')
-                .attr('class', 'node-text node-text-dark')
-                .attr('font-size', '14px')
-                .attr('font-weight', '600')
-                .text(data.name);
-        }
-
-        function drawClassNode(node, data) {
-            node.append('ellipse')
-                .attr('cx', 0)
-                .attr('cy', 0)
-                .attr('rx', 70)
-                .attr('ry', 25);
-
-            node.append('text')
-                .attr('class', 'node-text node-text-dark')
-                .attr('font-size', '13px')
-                .attr('font-weight', '600')
-                .text(data.name);
-        }
-
-        function drawMethodNode(node, data) {
-            // Hexagon shape
-            const w = 65, h = 20;
-            const points = [
-                [-w, 0],
-                [-w + 15, -h],
-                [w - 15, -h],
-                [w, 0],
-                [w - 15, h],
-                [-w + 15, h]
-            ];
-
-            node.append('polygon')
-                .attr('points', points.map(p => p.join(',')).join(' '));
-
-            node.append('text')
-                .attr('class', 'node-text')
-                .attr('font-size', '12px')
-                .text(data.name);
-        }
-
-        function drawVariableNode(node, data) {
-            const textLen = Math.max(data.name.length * 7, 60);
-            
-            node.append('rect')
-                .attr('x', -textLen/2 - 10)
-                .attr('y', -12)
-                .attr('width', textLen + 20)
-                .attr('height', 24)
-                .attr('rx', 3);
-
-            node.append('text')
-                .attr('class', 'node-text')
-                .attr('font-size', '11px')
-                .text(data.name);
-        }
-
-        function drawDataNode(node, data) {
-            node.append('rect')
-                .attr('x', -55)
-                .attr('y', -18)
-                .attr('width', 110)
-                .attr('height', 36)
-                .attr('rx', 4);
-
-            node.append('text')
-                .attr('class', 'node-text')
-                .attr('font-size', '12px')
-                .text(data.name);
-        }
-
-        function drawInstantiationNode(node, data) {
-            const displayText = data.shortName || data.name;
-            const textLen = Math.max(displayText.length * 7, 80);
-            
-            node.append('rect')
-                .attr('x', -textLen/2 - 10)
-                .attr('y', -15)
-                .attr('width', textLen + 20)
-                .attr('height', 30)
-                .attr('rx', 5);
-
-            node.append('text')
-                .attr('class', 'node-text')
-                .attr('font-size', '11px')
-                .text(displayText);
-        }
-
-        function drawLoopNode(node, data) {
-            // Parallelogram
-            const w = 50, h = 15;
-            const skew = 10;
-            const points = [
-                [-w + skew, -h],
-                [w + skew, -h],
-                [w - skew, h],
-                [-w - skew, h]
-            ];
-
-            node.append('polygon')
-                .attr('points', points.map(p => p.join(',')).join(' '));
-
-            node.append('text')
-                .attr('class', 'node-text node-text-dark')
-                .attr('font-size', '12px')
-                .attr('font-weight', '600')
-                .text(data.name);
+            // Initial view transform
+            const scale = Math.min(width / (totalWidth + 100), 1);
+            svg.call(zoom.transform, d3.zoomIdentity.translate(20, 10).scale(scale));
         }
 
         function showTooltip(event, d) {
-            const data = d.data;
-            let html = `<h4>${data.name}</h4>`;
-            html += `<p>Type: <code>${data.type}</code></p>`;
+            let html = `<h4>${d.name}</h4>`;
+            html += `<p>Type: <code>${d.type}</code></p>`;
             
-            if (data.type === 'instantiation' && data.className) {
-                html += `<p>Creates: <code>${data.className}</code></p>`;
+            if (d.type === 'instantiation' && d.className) {
+                html += `<p>Creates: <code>${d.className}</code></p>`;
             }
-            if (data.type === 'loop' && data.condition) {
-                html += `<p>Condition: <code>${data.condition.substring(0, 50)}...</code></p>`;
-            }
-            if (d.children && d.children.length > 0) {
-                html += `<p>Children: ${d.children.length}</p>`;
+            if (d.type === 'loop' && d.condition) {
+                html += `<p>Condition: <code>${d.condition}</code></p>`;
             }
 
             tooltip
@@ -1088,7 +1180,7 @@
 
         document.getElementById('resetView').addEventListener('click', () => {
             const width = svg.node().parentElement.clientWidth;
-            svg.transition().call(zoom.transform, d3.zoomIdentity.translate(width/2, 80).scale(0.6));
+            svg.transition().call(zoom.transform, d3.zoomIdentity.translate(20, 10).scale(0.8));
         });
 
         document.getElementById('exportSVG').addEventListener('click', () => {
@@ -1119,15 +1211,13 @@
                 return;
             }
 
-            const hierarchy = buildHierarchy(projectName, parsedModules);
-            renderTree(hierarchy);
+            renderSequentialFlow(projectName, parsedModules);
         });
 
         // =============================================
         // Load Example
         // =============================================
         document.getElementById('loadExampleBtn').addEventListener('click', () => {
-            // Quiz Project example
             files.length = 0;
             files.push(
                 {
