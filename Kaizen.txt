@@ -1,2 +1,6 @@
-Currently the tree is spreading the branches in same way as assembly tree project. But I don't want it same way for this project. It means I want to visualise the flow of logic so I want to see the blocks being generated in a sequence. For example as you can see in the attached image the blocks are generated as they are written inside the .py file. And in currently generated layout it cant be understood right.
+I want the suggestions to represent the for loop representation. which shows the initial value for te loop. Then increment is done and the condition. And at the end, what condition is checked bcz of which the for loop is working?
 
+
+
+
+Well. I want the arrows with round not sharp edges.

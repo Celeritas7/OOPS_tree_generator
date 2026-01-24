@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Python OOP Structure Visualizer - v3</title>
+    <title>Python OOP Structure Visualizer - Sequential Flow</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
     <style>
         * {
@@ -44,18 +44,11 @@
             gap: 8px;
         }
 
-        .file-tabs-container {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 10px;
-        }
-
         .file-tabs {
             display: flex;
             gap: 4px;
+            margin-bottom: 10px;
             flex-wrap: wrap;
-            flex: 1;
         }
 
         .file-tab {
@@ -101,21 +94,6 @@
         .add-file-btn:hover {
             border-color: #3498db;
             color: #3498db;
-        }
-
-        .clear-all-btn {
-            padding: 6px 10px;
-            background: #e74c3c;
-            border: none;
-            color: white;
-            cursor: pointer;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            white-space: nowrap;
-        }
-
-        .clear-all-btn:hover {
-            background: #c0392b;
         }
 
         .project-name-row {
@@ -279,7 +257,7 @@
             pointer-events: none;
             opacity: 0;
             transition: opacity 0.2s;
-            max-width: 320px;
+            max-width: 280px;
             z-index: 1000;
             color: #ecf0f1;
         }
@@ -303,21 +281,6 @@
             font-size: 0.75rem;
         }
 
-        .tooltip .body-list {
-            margin-top: 5px;
-            padding-left: 10px;
-            border-left: 2px solid #3498db;
-            font-family: 'Fira Code', monospace;
-            font-size: 0.7rem;
-            max-height: 150px;
-            overflow-y: auto;
-        }
-
-        .tooltip .body-list div {
-            padding: 2px 0;
-            color: #a8dadc;
-        }
-
         .instructions {
             margin-top: 12px;
             padding: 10px;
@@ -331,13 +294,6 @@
         .instructions strong {
             color: #2c3e50;
         }
-
-        /* Loop node special styling */
-        .loop-detail-text {
-            font-family: 'Fira Code', monospace;
-            font-size: 9px;
-            fill: #666;
-        }
     </style>
 </head>
 <body>
@@ -346,12 +302,12 @@
             <h2>🐍 Python Structure Visualizer</h2>
             
             <div class="project-name-row">
-                <input type="text" class="project-name-input" id="projectName" placeholder="Project Name" value="My Project">
+                <input type="text" class="project-name-input" id="projectName" placeholder="Project Name" value="Quiz Project">
             </div>
             
-            <div class="file-tabs-container">
-                <div class="file-tabs" id="fileTabs"></div>
-                <button class="clear-all-btn" id="clearAllBtn">Clear All</button>
+            <div class="file-tabs" id="fileTabs">
+                <button class="file-tab active" data-file="0">data.py</button>
+                <button class="add-file-btn" id="addFileBtn">+ Add</button>
             </div>
             
             <textarea class="code-input" id="codeInput" placeholder="Paste your Python code here..."></textarea>
@@ -362,10 +318,10 @@
             </div>
             
             <div class="instructions">
-                <strong>Enhanced Loop Visualization:</strong><br>
-                • For loops show: iterator, iterable, body<br>
-                • While loops show: condition, body<br>
-                • Hover over loops to see details
+                <strong>Sequential Flow Layout:</strong><br>
+                • Modules as vertical columns<br>
+                • Elements flow top-to-bottom in code order<br>
+                • Methods/variables branch to the right
             </div>
         </div>
         
@@ -395,7 +351,7 @@
                 </div>
                 <div class="legend-item">
                     <div class="legend-shape" style="background: #f8cecc; border: 1px solid #b85450;"></div>
-                    <span>Method / Function</span>
+                    <span>Method</span>
                 </div>
                 <div class="legend-item">
                     <div class="legend-shape" style="background: #e1d5e7; border: 1px solid #9673a6;"></div>
@@ -407,7 +363,7 @@
                 </div>
                 <div class="legend-item">
                     <div class="legend-shape" style="background: #fff2cc; border: 1px solid #d6b656;"></div>
-                    <span>Loop (For/While)</span>
+                    <span>Loop / Instantiation</span>
                 </div>
             </div>
             
@@ -417,20 +373,38 @@
 
     <script>
         // =============================================
-        // Configuration
+        // Configuration - Matching draw.io style
         // =============================================
         const CONFIG = {
+            // Project block
             project: { w: 160, h: 45 },
+            
+            // Module blocks
             module: { w: 140, h: 35, gapX: 280 },
+            
+            // Class blocks (ellipse)
             class: { w: 140, h: 45 },
+            
+            // Method blocks (hexagon)
             method: { w: 130, h: 35, offsetX: 100, gapY: 15 },
+            
+            // Variable blocks
             variable: { w: 120, h: 24, offsetX: 90, gapY: 8 },
+            
+            // Data blocks
             data: { w: 110, h: 40, gapY: 15 },
-            loop: { w: 160, h: 50, offsetX: 100, gapY: 15 },
-            loopBody: { w: 140, h: 22, offsetX: 40, gapY: 6 },
+            
+            // Loop blocks
+            loop: { w: 100, h: 35, offsetX: 120, gapY: 15 },
+            
+            // Instantiation blocks
             instantiation: { w: 180, h: 30, gapY: 15 },
+            
+            // Vertical spacing
             verticalGap: 20,
             moduleStartY: 120,
+            
+            // Colors matching draw.io
             colors: {
                 project: { fill: '#dae8fc', stroke: '#6c8ebf' },
                 module: { fill: '#fff2cc', stroke: '#d6b656' },
@@ -439,7 +413,6 @@
                 variable: { fill: '#e1d5e7', stroke: '#9673a6' },
                 data: { fill: '#f5f5f5', stroke: '#666666' },
                 loop: { fill: '#fff2cc', stroke: '#d6b656' },
-                loopBody: { fill: '#fef9e7', stroke: '#d4ac0d' },
                 instantiation: { fill: '#fff2cc', stroke: '#d6b656' },
                 link: '#666'
             }
@@ -448,11 +421,17 @@
         // =============================================
         // File Management
         // =============================================
-        let files = [{ name: 'main.py', code: '' }];
+        const files = [
+            { name: 'data.py', code: '' },
+            { name: 'question_model.py', code: '' },
+            { name: 'quiz_brain.py', code: '' },
+            { name: 'main.py', code: '' }
+        ];
         let activeFileIndex = 0;
 
         const fileTabs = document.getElementById('fileTabs');
         const codeInput = document.getElementById('codeInput');
+        const addFileBtn = document.getElementById('addFileBtn');
 
         function renderFileTabs() {
             fileTabs.innerHTML = '';
@@ -460,15 +439,10 @@
                 const tab = document.createElement('button');
                 tab.className = `file-tab ${index === activeFileIndex ? 'active' : ''}`;
                 tab.dataset.file = index;
-                tab.innerHTML = `${file.name}<span class="remove" data-remove="${index}">×</span>`;
+                tab.innerHTML = `${file.name}${files.length > 1 ? `<span class="remove" data-remove="${index}">×</span>` : ''}`;
                 fileTabs.appendChild(tab);
             });
-            
-            const addBtn = document.createElement('button');
-            addBtn.className = 'add-file-btn';
-            addBtn.id = 'addFileBtn';
-            addBtn.textContent = '+ Add';
-            fileTabs.appendChild(addBtn);
+            fileTabs.appendChild(addFileBtn);
         }
 
         fileTabs.addEventListener('click', (e) => {
@@ -486,37 +460,27 @@
                     codeInput.value = files[activeFileIndex].code;
                     renderFileTabs();
                 }
-            } else if (e.target.id === 'addFileBtn') {
-                files[activeFileIndex].code = codeInput.value;
-                const newName = prompt('Enter file name (e.g., utils.py):', 'new_file.py');
-                if (newName) {
-                    files.push({ name: newName, code: '' });
-                    activeFileIndex = files.length - 1;
-                    codeInput.value = '';
-                    renderFileTabs();
-                }
             }
         });
 
-        // Clear All Button
-        document.getElementById('clearAllBtn').addEventListener('click', () => {
-            if (confirm('Clear all files and start fresh?')) {
-                files = [{ name: 'main.py', code: '' }];
-                activeFileIndex = 0;
+        addFileBtn.addEventListener('click', () => {
+            files[activeFileIndex].code = codeInput.value;
+            const newName = prompt('Enter file name (e.g., utils.py):', 'new_file.py');
+            if (newName) {
+                files.push({ name: newName, code: '' });
+                activeFileIndex = files.length - 1;
                 codeInput.value = '';
-                document.getElementById('projectName').value = 'My Project';
                 renderFileTabs();
-                initVisualization(); // Clear the diagram too
             }
         });
 
         // =============================================
-        // Enhanced Python Parser with Loop Details
+        // Python Parser
         // =============================================
         function parsePythonCode(code, moduleName) {
             const result = {
                 name: moduleName,
-                elements: []
+                elements: [] // Sequential list of elements in code order
             };
 
             const lines = code.split('\n');
@@ -524,20 +488,18 @@
             let currentMethod = null;
             let classIndent = -1;
             let methodIndent = -1;
-            let i = 0;
 
-            while (i < lines.length) {
+            for (let i = 0; i < lines.length; i++) {
                 const line = lines[i];
                 const trimmed = line.trim();
                 const indent = line.search(/\S/);
-                
-                if (indent === -1 || trimmed.startsWith('#')) {
-                    i++;
-                    continue;
-                }
+                if (indent === -1) continue; // Empty line
+
+                // Skip comments
+                if (trimmed.startsWith('#')) continue;
 
                 // Check if we've exited a class
-                if (currentClass && indent <= classIndent && trimmed) {
+                if (currentClass && indent <= classIndent && trimmed && !trimmed.startsWith('#')) {
                     currentClass = null;
                     currentMethod = null;
                     classIndent = -1;
@@ -545,14 +507,13 @@
                 }
 
                 // Check if we've exited a method
-                if (currentMethod && indent <= methodIndent && !trimmed.startsWith('def ')) {
+                if (currentMethod && indent <= methodIndent && trimmed && !trimmed.startsWith('def ')) {
                     currentMethod = null;
                     methodIndent = -1;
                 }
 
-                // Skip imports
+                // Parse imports (skip for visualization)
                 if (trimmed.startsWith('import ') || trimmed.startsWith('from ')) {
-                    i++;
                     continue;
                 }
 
@@ -568,7 +529,6 @@
                     classIndent = indent;
                     currentMethod = null;
                     methodIndent = -1;
-                    i++;
                     continue;
                 }
 
@@ -583,19 +543,19 @@
                         };
                         currentClass.methods.push(currentMethod);
                         methodIndent = indent;
-                        i++;
                         continue;
                     }
 
-                    // Parse self.x assignments
+                    // Parse self.x assignments in __init__
                     if (currentMethod) {
                         const selfMatch = trimmed.match(/self\.(\w+)\s*=/);
                         if (selfMatch) {
-                            const varName = `self.${selfMatch[1]}`;
+                            const varName = currentMethod.name === '__init__' 
+                                ? `self.${selfMatch[1]}` 
+                                : `self.${selfMatch[1]}`;
                             if (!currentMethod.variables.includes(varName)) {
                                 currentMethod.variables.push(varName);
                             }
-                            i++;
                             continue;
                         }
 
@@ -607,124 +567,57 @@
                             }
                         }
                     }
-                    i++;
                     continue;
                 }
 
-                // Parse data structures at module level
+                // Parse standalone data structures at module level
                 const dictMatch = trimmed.match(/^(\w+)\s*=\s*[\[{]/);
                 if (dictMatch) {
                     result.elements.push({
                         type: 'data',
                         name: dictMatch[1],
-                        isDict: trimmed.includes('{')
+                        isDict: trimmed.includes('{') || trimmed.includes('dict(')
                     });
-                    i++;
                     continue;
                 }
 
-                // Parse simple variable assignments at module level
-                const simpleVarMatch = trimmed.match(/^(\w+)\s*=\s*(.+)$/);
-                if (simpleVarMatch && !trimmed.includes('(') && !currentClass) {
-                    const varName = simpleVarMatch[1];
-                    const varValue = simpleVarMatch[2].trim();
-                    if (!['True', 'False', 'None'].includes(varName)) {
-                        result.elements.push({
-                            type: 'variable',
-                            name: varName,
-                            value: varValue
-                        });
-                        i++;
-                        continue;
-                    }
+                // Parse list comprehensions or empty lists that become populated
+                const listMatch = trimmed.match(/^(\w+)\s*=\s*\[\]/);
+                if (listMatch) {
+                    result.elements.push({
+                        type: 'data',
+                        name: listMatch[1],
+                        isDict: false
+                    });
+                    continue;
                 }
 
-                // Parse FOR loops at module level with body extraction
-                if (trimmed.startsWith('for ') && !currentClass) {
-                    const forMatch = trimmed.match(/^for\s+(\w+)\s+in\s+(.+):/);
-                    if (forMatch) {
-                        const loopIndent = indent;
-                        const bodyStatements = [];
-                        
-                        // Extract loop body
-                        let j = i + 1;
-                        while (j < lines.length) {
-                            const bodyLine = lines[j];
-                            const bodyTrimmed = bodyLine.trim();
-                            const bodyIndent = bodyLine.search(/\S/);
-                            
-                            if (bodyIndent === -1) {
-                                j++;
-                                continue;
-                            }
-                            
-                            if (bodyIndent <= loopIndent) {
-                                break;
-                            }
-                            
-                            if (!bodyTrimmed.startsWith('#')) {
-                                bodyStatements.push(bodyTrimmed);
-                            }
-                            j++;
-                        }
-                        
-                        result.elements.push({
-                            type: 'forLoop',
-                            iterator: forMatch[1],
-                            iterable: forMatch[2],
-                            body: bodyStatements,
-                            fullCondition: `${forMatch[1]} in ${forMatch[2]}`
-                        });
-                        
-                        i = j;
-                        continue;
-                    }
+                // Parse loops at module level
+                if (trimmed.startsWith('for ')) {
+                    const forMatch = trimmed.match(/^for\s+(.+?)\s+in\s+(.+?):/);
+                    result.elements.push({
+                        type: 'loop',
+                        loopType: 'For',
+                        condition: forMatch ? `${forMatch[1]} in ${forMatch[2]}` : trimmed
+                    });
+                    continue;
                 }
 
-                // Parse WHILE loops at module level with body extraction
-                if (trimmed.startsWith('while ') && !currentClass) {
-                    const whileMatch = trimmed.match(/^while\s+(.+):/);
-                    if (whileMatch) {
-                        const loopIndent = indent;
-                        const bodyStatements = [];
-                        
-                        // Extract loop body
-                        let j = i + 1;
-                        while (j < lines.length) {
-                            const bodyLine = lines[j];
-                            const bodyTrimmed = bodyLine.trim();
-                            const bodyIndent = bodyLine.search(/\S/);
-                            
-                            if (bodyIndent === -1) {
-                                j++;
-                                continue;
-                            }
-                            
-                            if (bodyIndent <= loopIndent) {
-                                break;
-                            }
-                            
-                            if (!bodyTrimmed.startsWith('#')) {
-                                bodyStatements.push(bodyTrimmed);
-                            }
-                            j++;
-                        }
-                        
-                        result.elements.push({
-                            type: 'whileLoop',
-                            condition: whileMatch[1],
-                            body: bodyStatements
-                        });
-                        
-                        i = j;
-                        continue;
-                    }
+                if (trimmed.startsWith('while ')) {
+                    const whileMatch = trimmed.match(/^while\s+(.+?):/);
+                    result.elements.push({
+                        type: 'loop',
+                        loopType: 'While',
+                        condition: whileMatch ? whileMatch[1] : trimmed
+                    });
+                    continue;
                 }
 
                 // Parse instantiations at module level
                 const instMatch = trimmed.match(/^(\w+)\s*=\s*(\w+)\s*\((.*)?\)/);
                 if (instMatch && !currentClass) {
                     const className = instMatch[2];
+                    // Check if it looks like a class instantiation (capitalized)
                     if (className[0] === className[0].toUpperCase() && className[0] !== className[0].toLowerCase()) {
                         result.elements.push({
                             type: 'instantiation',
@@ -732,62 +625,26 @@
                             className: className,
                             args: instMatch[3] || ''
                         });
-                        i++;
                         continue;
                     }
                 }
 
-                // Parse standalone function definitions
-                const funcMatch = trimmed.match(/^def\s+(\w+)\s*\((.*)?\):/);
+                // Parse standalone function definitions at module level
+                const funcMatch = trimmed.match(/^def\s+(\w+)\s*\(/);
                 if (funcMatch && !currentClass) {
-                    const funcIndent = indent;
-                    const funcBody = [];
-                    
-                    // Extract function body
-                    let j = i + 1;
-                    while (j < lines.length) {
-                        const bodyLine = lines[j];
-                        const bodyTrimmed = bodyLine.trim();
-                        const bodyIndent = bodyLine.search(/\S/);
-                        
-                        if (bodyIndent === -1) {
-                            j++;
-                            continue;
-                        }
-                        
-                        if (bodyIndent <= funcIndent) {
-                            break;
-                        }
-                        
-                        if (!bodyTrimmed.startsWith('#')) {
-                            // Check for variable assignments
-                            const localVar = bodyTrimmed.match(/^(\w+)\s*=\s*/);
-                            if (localVar && !['return', 'if', 'else', 'elif', 'for', 'while'].includes(localVar[1])) {
-                                funcBody.push(localVar[1]);
-                            }
-                        }
-                        j++;
-                    }
-                    
                     result.elements.push({
                         type: 'function',
-                        name: funcMatch[1],
-                        params: funcMatch[2] || '',
-                        variables: funcBody
+                        name: funcMatch[1]
                     });
-                    
-                    i = j;
                     continue;
                 }
-
-                i++;
             }
 
             return result;
         }
 
         // =============================================
-        // D3 Visualization with Rounded Arrows
+        // D3 Visualization - Sequential Flow Layout
         // =============================================
         const svg = d3.select('#visualization');
         const tooltip = d3.select('#tooltip');
@@ -801,9 +658,10 @@
             svg.attr('width', width).attr('height', height);
             svg.selectAll('*').remove();
 
+            // Add defs for markers and filters
             const defs = svg.append('defs');
             
-            // Rounded arrow marker
+            // Arrow marker
             defs.append('marker')
                 .attr('id', 'arrowhead')
                 .attr('viewBox', '-0 -5 10 10')
@@ -813,7 +671,7 @@
                 .attr('markerWidth', 5)
                 .attr('markerHeight', 5)
                 .append('path')
-                .attr('d', 'M 0,-3 Q 5,0 0,3 L 8,0 Z')
+                .attr('d', 'M 0,-4 L 8,0 L 0,4')
                 .attr('fill', CONFIG.colors.link);
 
             g = svg.append('g');
@@ -827,43 +685,6 @@
             svg.call(zoom);
         }
 
-        // Create rounded path between two points
-        function createRoundedPath(x1, y1, x2, y2, type) {
-            const radius = 8; // Corner radius
-            
-            if (type === 'centered') {
-                // Vertical path with potential horizontal offset
-                if (Math.abs(x1 - x2) < 5) {
-                    // Straight down
-                    return `M ${x1} ${y1} L ${x1} ${y2}`;
-                } else {
-                    // Down, across, down with rounded corners
-                    const midY = (y1 + y2) / 2;
-                    const dir = x2 > x1 ? 1 : -1;
-                    
-                    return `M ${x1} ${y1} 
-                            L ${x1} ${midY - radius}
-                            Q ${x1} ${midY} ${x1 + dir * radius} ${midY}
-                            L ${x2 - dir * radius} ${midY}
-                            Q ${x2} ${midY} ${x2} ${midY + radius}
-                            L ${x2} ${y2}`;
-                }
-            } else {
-                // Offset path: down, right, then to target
-                const dropY = y1 + 15;
-                const approachX = x2 - 20;
-                
-                return `M ${x1} ${y1}
-                        L ${x1} ${dropY - radius}
-                        Q ${x1} ${dropY} ${x1 + radius} ${dropY}
-                        L ${approachX - radius} ${dropY}
-                        Q ${approachX} ${dropY} ${approachX} ${dropY + radius}
-                        L ${approachX} ${y2 - radius}
-                        Q ${approachX} ${y2} ${approachX + radius} ${y2}
-                        L ${x2} ${y2}`;
-            }
-        }
-
         function renderSequentialFlow(projectName, modules) {
             initVisualization();
 
@@ -871,18 +692,19 @@
             const nodes = [];
             const links = [];
 
-            // Calculate column widths
+            // Calculate column widths based on content
             const columnWidths = [];
-            modules.forEach((mod) => {
+            modules.forEach((mod, idx) => {
                 let maxWidth = CONFIG.module.w;
                 mod.elements.forEach(el => {
                     if (el.type === 'class') {
+                        // Class + methods + variables width
+                        const methodWidth = CONFIG.method.offsetX + CONFIG.method.w;
                         const varWidth = CONFIG.method.offsetX + CONFIG.variable.offsetX + CONFIG.variable.w;
                         maxWidth = Math.max(maxWidth, varWidth + 40);
                     }
-                    if (el.type === 'forLoop' || el.type === 'whileLoop') {
-                        const loopWidth = CONFIG.loop.offsetX + CONFIG.loop.w + CONFIG.loopBody.offsetX + CONFIG.loopBody.w;
-                        maxWidth = Math.max(maxWidth, loopWidth + 20);
+                    if (el.type === 'loop') {
+                        maxWidth = Math.max(maxWidth, CONFIG.loop.offsetX + CONFIG.loop.w + 20);
                     }
                     if (el.type === 'instantiation') {
                         maxWidth = Math.max(maxWidth, CONFIG.instantiation.w + 20);
@@ -894,18 +716,18 @@
             // Calculate column X positions
             const columnX = [];
             let currentX = 60;
-            columnWidths.forEach((w) => {
+            columnWidths.forEach((w, i) => {
                 columnX.push(currentX);
-                currentX += w + 50;
+                currentX += w + 40;
             });
             const totalWidth = currentX;
 
-            // Project node
+            // Create project node
             const projectNode = {
                 id: 'project',
                 type: 'project',
                 name: projectName,
-                x: 60 + (totalWidth - 60) / 2 - CONFIG.project.w / 2,
+                x: 60 + (totalWidth - 60) / 2,
                 y: 30,
                 w: CONFIG.project.w,
                 h: CONFIG.project.h
@@ -933,7 +755,7 @@
                 curY += CONFIG.module.h + CONFIG.verticalGap;
                 let lastCenteredNode = moduleNode;
 
-                // Process elements
+                // Process elements in sequence
                 mod.elements.forEach((el, elIdx) => {
                     if (el.type === 'data') {
                         const dataNode = {
@@ -951,22 +773,8 @@
                         lastCenteredNode = dataNode;
                         curY += CONFIG.data.h + CONFIG.data.gapY;
                     }
-                    else if (el.type === 'variable') {
-                        const varNode = {
-                            id: `mod_${modIdx}_var_${elIdx}`,
-                            type: 'variable',
-                            name: `${el.name} = ${el.value}`,
-                            x: modX + (CONFIG.module.w - CONFIG.variable.w) / 2,
-                            y: curY,
-                            w: CONFIG.variable.w + 20,
-                            h: CONFIG.variable.h
-                        };
-                        nodes.push(varNode);
-                        links.push({ source: lastCenteredNode.id, target: varNode.id, type: 'centered' });
-                        lastCenteredNode = varNode;
-                        curY += CONFIG.variable.h + CONFIG.variable.gapY + 5;
-                    }
                     else if (el.type === 'class') {
+                        // Class node (centered under module)
                         const classNode = {
                             id: `mod_${modIdx}_class_${elIdx}`,
                             type: 'class',
@@ -979,6 +787,7 @@
                         nodes.push(classNode);
                         links.push({ source: lastCenteredNode.id, target: classNode.id, type: 'centered' });
 
+                        // Methods (offset to the right)
                         let methodY = curY + CONFIG.class.h + CONFIG.method.gapY;
                         const methodX = modX + CONFIG.method.offsetX;
 
@@ -995,6 +804,7 @@
                             nodes.push(methodNode);
                             links.push({ source: classNode.id, target: methodNode.id, type: 'offset' });
 
+                            // Variables (offset further right)
                             let varY = methodY + CONFIG.method.h + CONFIG.variable.gapY;
                             const varX = methodX + CONFIG.variable.offsetX;
 
@@ -1013,96 +823,24 @@
                                 varY += CONFIG.variable.h + CONFIG.variable.gapY;
                             });
 
-                            methodY = method.variables.length > 0 ? varY + CONFIG.method.gapY : methodY + CONFIG.method.h + CONFIG.method.gapY + 20;
+                            // Update methodY for next method
+                            if (method.variables.length > 0) {
+                                methodY = varY + CONFIG.method.gapY;
+                            } else {
+                                methodY += CONFIG.method.h + CONFIG.method.gapY + 20;
+                            }
                         });
 
                         curY = methodY + 10;
                         lastCenteredNode = classNode;
                     }
-                    else if (el.type === 'function') {
-                        const funcNode = {
-                            id: `mod_${modIdx}_func_${elIdx}`,
-                            type: 'method',
-                            name: el.name,
-                            params: el.params,
-                            x: modX + (CONFIG.module.w - CONFIG.method.w) / 2,
-                            y: curY,
-                            w: CONFIG.method.w,
-                            h: CONFIG.method.h
-                        };
-                        nodes.push(funcNode);
-                        links.push({ source: lastCenteredNode.id, target: funcNode.id, type: 'centered' });
-                        
-                        // Function variables
-                        let varY = curY + CONFIG.method.h + CONFIG.variable.gapY;
-                        const varX = modX + CONFIG.method.w + 20;
-                        
-                        el.variables.forEach((varName, vIdx) => {
-                            const varNode = {
-                                id: `mod_${modIdx}_func_${elIdx}_var_${vIdx}`,
-                                type: 'variable',
-                                name: varName,
-                                x: varX,
-                                y: varY,
-                                w: CONFIG.variable.w,
-                                h: CONFIG.variable.h
-                            };
-                            nodes.push(varNode);
-                            links.push({ source: funcNode.id, target: varNode.id, type: 'offset' });
-                            varY += CONFIG.variable.h + CONFIG.variable.gapY;
-                        });
-                        
-                        lastCenteredNode = funcNode;
-                        curY = el.variables.length > 0 ? varY + CONFIG.method.gapY : curY + CONFIG.method.h + CONFIG.method.gapY;
-                    }
-                    else if (el.type === 'forLoop') {
-                        // For Loop node
+                    else if (el.type === 'loop') {
+                        // Loop node (offset to the right from last centered)
                         const loopNode = {
-                            id: `mod_${modIdx}_forloop_${elIdx}`,
-                            type: 'forLoop',
-                            name: 'For',
-                            iterator: el.iterator,
-                            iterable: el.iterable,
-                            body: el.body,
-                            fullCondition: el.fullCondition,
-                            x: modX + CONFIG.loop.offsetX,
-                            y: curY,
-                            w: CONFIG.loop.w,
-                            h: CONFIG.loop.h
-                        };
-                        nodes.push(loopNode);
-                        links.push({ source: lastCenteredNode.id, target: loopNode.id, type: 'offset' });
-
-                        // Body statements
-                        let bodyY = curY + CONFIG.loop.h + CONFIG.loopBody.gapY;
-                        const bodyX = modX + CONFIG.loop.offsetX + CONFIG.loopBody.offsetX;
-
-                        el.body.slice(0, 5).forEach((stmt, bIdx) => { // Limit to 5 statements
-                            const bodyNode = {
-                                id: `mod_${modIdx}_forloop_${elIdx}_body_${bIdx}`,
-                                type: 'loopBody',
-                                name: stmt.length > 25 ? stmt.substring(0, 22) + '...' : stmt,
-                                fullStatement: stmt,
-                                x: bodyX,
-                                y: bodyY,
-                                w: CONFIG.loopBody.w,
-                                h: CONFIG.loopBody.h
-                            };
-                            nodes.push(bodyNode);
-                            links.push({ source: loopNode.id, target: bodyNode.id, type: 'offset' });
-                            bodyY += CONFIG.loopBody.h + CONFIG.loopBody.gapY;
-                        });
-
-                        curY = bodyY + CONFIG.loop.gapY;
-                    }
-                    else if (el.type === 'whileLoop') {
-                        // While Loop node
-                        const loopNode = {
-                            id: `mod_${modIdx}_whileloop_${elIdx}`,
-                            type: 'whileLoop',
-                            name: 'While',
+                            id: `mod_${modIdx}_loop_${elIdx}`,
+                            type: 'loop',
+                            name: el.loopType,
                             condition: el.condition,
-                            body: el.body,
                             x: modX + CONFIG.loop.offsetX,
                             y: curY,
                             w: CONFIG.loop.w,
@@ -1110,30 +848,10 @@
                         };
                         nodes.push(loopNode);
                         links.push({ source: lastCenteredNode.id, target: loopNode.id, type: 'offset' });
-
-                        // Body statements
-                        let bodyY = curY + CONFIG.loop.h + CONFIG.loopBody.gapY;
-                        const bodyX = modX + CONFIG.loop.offsetX + CONFIG.loopBody.offsetX;
-
-                        el.body.slice(0, 5).forEach((stmt, bIdx) => {
-                            const bodyNode = {
-                                id: `mod_${modIdx}_whileloop_${elIdx}_body_${bIdx}`,
-                                type: 'loopBody',
-                                name: stmt.length > 25 ? stmt.substring(0, 22) + '...' : stmt,
-                                fullStatement: stmt,
-                                x: bodyX,
-                                y: bodyY,
-                                w: CONFIG.loopBody.w,
-                                h: CONFIG.loopBody.h
-                            };
-                            nodes.push(bodyNode);
-                            links.push({ source: loopNode.id, target: bodyNode.id, type: 'offset' });
-                            bodyY += CONFIG.loopBody.h + CONFIG.loopBody.gapY;
-                        });
-
-                        curY = bodyY + CONFIG.loop.gapY;
+                        curY += CONFIG.loop.h + CONFIG.loop.gapY;
                     }
                     else if (el.type === 'instantiation') {
+                        // Instantiation node (centered)
                         const instText = `${el.variable} = ${el.className}(${el.args})`;
                         const instNode = {
                             id: `mod_${modIdx}_inst_${elIdx}`,
@@ -1151,15 +869,31 @@
                         lastCenteredNode = instNode;
                         curY += CONFIG.instantiation.h + CONFIG.instantiation.gapY;
                     }
+                    else if (el.type === 'function') {
+                        // Standalone function (centered)
+                        const funcNode = {
+                            id: `mod_${modIdx}_func_${elIdx}`,
+                            type: 'method',
+                            name: el.name,
+                            x: modX + (CONFIG.module.w - CONFIG.method.w) / 2,
+                            y: curY,
+                            w: CONFIG.method.w,
+                            h: CONFIG.method.h
+                        };
+                        nodes.push(funcNode);
+                        links.push({ source: lastCenteredNode.id, target: funcNode.id, type: 'centered' });
+                        lastCenteredNode = funcNode;
+                        curY += CONFIG.method.h + CONFIG.method.gapY;
+                    }
                 });
             });
 
-            // Node lookup
+            // Create node lookup
             const nodeMap = {};
             nodes.forEach(n => nodeMap[n.id] = n);
 
-            // Draw links with rounded corners
-            g.selectAll('.link')
+            // Draw links
+            const linkElements = g.selectAll('.link')
                 .data(links)
                 .enter()
                 .append('path')
@@ -1172,12 +906,26 @@
                     const source = nodeMap[d.source];
                     const target = nodeMap[d.target];
                     
-                    const x1 = source.x + source.w / 2;
-                    const y1 = source.y + source.h;
-                    const x2 = d.type === 'centered' ? target.x + target.w / 2 : target.x;
-                    const y2 = d.type === 'centered' ? target.y : target.y + target.h / 2;
-                    
-                    return createRoundedPath(x1, y1, x2, y2, d.type);
+                    if (d.type === 'centered') {
+                        // Straight down
+                        const x1 = source.x + source.w / 2;
+                        const y1 = source.y + source.h;
+                        const x2 = target.x + target.w / 2;
+                        const y2 = target.y;
+                        
+                        return `M ${x1} ${y1} L ${x1} ${(y1 + y2) / 2} L ${x2} ${(y1 + y2) / 2} L ${x2} ${y2}`;
+                    } else {
+                        // Offset - exit bottom, enter left
+                        const x1 = source.x + source.w / 2;
+                        const y1 = source.y + source.h;
+                        const x2 = target.x;
+                        const y2 = target.y + target.h / 2;
+                        
+                        const midY = y1 + 10;
+                        const midX = x2 - 15;
+                        
+                        return `M ${x1} ${y1} L ${x1} ${midY} L ${midX} ${midY} L ${midX} ${y2} L ${x2} ${y2}`;
+                    }
                 });
 
             // Draw nodes
@@ -1196,17 +944,20 @@
                 switch(d.type) {
                     case 'project':
                         node.append('rect')
-                            .attr('x', d.x).attr('y', d.y)
-                            .attr('width', d.w).attr('height', d.h)
+                            .attr('x', d.x)
+                            .attr('y', d.y)
+                            .attr('width', d.w)
+                            .attr('height', d.h)
                             .attr('rx', 8)
                             .attr('fill', colors.fill)
                             .attr('stroke', colors.stroke)
                             .attr('stroke-width', 2);
                         node.append('text')
-                            .attr('x', d.x + d.w / 2).attr('y', d.y + d.h / 2)
+                            .attr('x', d.x + d.w / 2)
+                            .attr('y', d.y + d.h / 2)
                             .attr('text-anchor', 'middle')
                             .attr('dominant-baseline', 'middle')
-                            .attr('font-size', '14px')
+                            .attr('font-size', '16px')
                             .attr('font-weight', 'bold')
                             .attr('fill', '#333')
                             .text(d.name);
@@ -1214,17 +965,20 @@
 
                     case 'module':
                         node.append('rect')
-                            .attr('x', d.x).attr('y', d.y)
-                            .attr('width', d.w).attr('height', d.h)
+                            .attr('x', d.x)
+                            .attr('y', d.y)
+                            .attr('width', d.w)
+                            .attr('height', d.h)
                             .attr('rx', 5)
                             .attr('fill', colors.fill)
                             .attr('stroke', colors.stroke)
                             .attr('stroke-width', 2);
                         node.append('text')
-                            .attr('x', d.x + d.w / 2).attr('y', d.y + d.h / 2)
+                            .attr('x', d.x + d.w / 2)
+                            .attr('y', d.y + d.h / 2)
                             .attr('text-anchor', 'middle')
                             .attr('dominant-baseline', 'middle')
-                            .attr('font-size', '12px')
+                            .attr('font-size', '13px')
                             .attr('font-weight', '600')
                             .attr('fill', '#333')
                             .text(d.name);
@@ -1232,22 +986,27 @@
 
                     case 'class':
                         node.append('ellipse')
-                            .attr('cx', d.x + d.w / 2).attr('cy', d.y + d.h / 2)
-                            .attr('rx', d.w / 2).attr('ry', d.h / 2)
+                            .attr('cx', d.x + d.w / 2)
+                            .attr('cy', d.y + d.h / 2)
+                            .attr('rx', d.w / 2)
+                            .attr('ry', d.h / 2)
                             .attr('fill', colors.fill)
                             .attr('stroke', colors.stroke)
                             .attr('stroke-width', 2);
+                        // "class" keyword in blue
                         node.append('text')
-                            .attr('x', d.x + d.w / 2).attr('y', d.y + d.h / 2)
+                            .attr('x', d.x + d.w / 2)
+                            .attr('y', d.y + d.h / 2)
                             .attr('text-anchor', 'middle')
                             .attr('dominant-baseline', 'middle')
-                            .attr('font-size', '11px')
-                            .html(`<tspan fill="#2980b9">class </tspan><tspan fill="#333">${d.name}</tspan>`);
+                            .attr('font-size', '12px')
+                            .html(`<tspan fill="blue">class </tspan><tspan fill="#333">${d.name}</tspan>`);
                         break;
 
                     case 'method':
+                        // Hexagon shape
                         const hx = d.x, hy = d.y, hw = d.w, hh = d.h;
-                        const indent = hw * 0.12;
+                        const indent = hw * 0.15;
                         const hexPoints = [
                             [hx + indent, hy],
                             [hx + hw - indent, hy],
@@ -1262,57 +1021,28 @@
                             .attr('stroke', colors.stroke)
                             .attr('stroke-width', 2);
                         node.append('text')
-                            .attr('x', d.x + d.w / 2).attr('y', d.y + d.h / 2)
+                            .attr('x', d.x + d.w / 2)
+                            .attr('y', d.y + d.h / 2)
                             .attr('text-anchor', 'middle')
                             .attr('dominant-baseline', 'middle')
-                            .attr('font-size', '10px')
+                            .attr('font-size', '11px')
                             .attr('fill', '#333')
                             .text(d.name);
                         break;
 
                     case 'variable':
                         node.append('rect')
-                            .attr('x', d.x).attr('y', d.y)
-                            .attr('width', d.w).attr('height', d.h)
-                            .attr('rx', 3)
+                            .attr('x', d.x)
+                            .attr('y', d.y)
+                            .attr('width', d.w)
+                            .attr('height', d.h)
+                            .attr('rx', 2)
                             .attr('fill', colors.fill)
                             .attr('stroke', colors.stroke)
                             .attr('stroke-width', 1.5);
                         node.append('text')
-                            .attr('x', d.x + d.w / 2).attr('y', d.y + d.h / 2)
-                            .attr('text-anchor', 'middle')
-                            .attr('dominant-baseline', 'middle')
-                            .attr('font-size', '9px')
-                            .attr('fill', '#333')
-                            .text(d.name.length > 18 ? d.name.substring(0, 15) + '...' : d.name);
-                        break;
-
-                    case 'data':
-                        if (d.isDict) {
-                            node.append('rect')
-                                .attr('x', d.x).attr('y', d.y + 6)
-                                .attr('width', d.w).attr('height', d.h - 6)
-                                .attr('rx', 3)
-                                .attr('fill', colors.fill)
-                                .attr('stroke', colors.stroke)
-                                .attr('stroke-width', 1.5);
-                            node.append('ellipse')
-                                .attr('cx', d.x + d.w / 2).attr('cy', d.y + 8)
-                                .attr('rx', d.w / 2).attr('ry', 8)
-                                .attr('fill', colors.fill)
-                                .attr('stroke', colors.stroke)
-                                .attr('stroke-width', 1.5);
-                        } else {
-                            node.append('rect')
-                                .attr('x', d.x).attr('y', d.y)
-                                .attr('width', d.w).attr('height', d.h)
-                                .attr('rx', 4)
-                                .attr('fill', colors.fill)
-                                .attr('stroke', colors.stroke)
-                                .attr('stroke-width', 1.5);
-                        }
-                        node.append('text')
-                            .attr('x', d.x + d.w / 2).attr('y', d.y + d.h / 2 + 3)
+                            .attr('x', d.x + d.w / 2)
+                            .attr('y', d.y + d.h / 2)
                             .attr('text-anchor', 'middle')
                             .attr('dominant-baseline', 'middle')
                             .attr('font-size', '10px')
@@ -1320,9 +1050,50 @@
                             .text(d.name);
                         break;
 
-                    case 'forLoop':
-                    case 'whileLoop':
-                        // Parallelogram with details
+                    case 'data':
+                        // Cylinder-like shape for dicts, rectangle for lists
+                        if (d.isDict) {
+                            // Simplified cylinder
+                            node.append('rect')
+                                .attr('x', d.x)
+                                .attr('y', d.y + 5)
+                                .attr('width', d.w)
+                                .attr('height', d.h - 5)
+                                .attr('rx', 3)
+                                .attr('fill', colors.fill)
+                                .attr('stroke', colors.stroke)
+                                .attr('stroke-width', 1.5);
+                            node.append('ellipse')
+                                .attr('cx', d.x + d.w / 2)
+                                .attr('cy', d.y + 8)
+                                .attr('rx', d.w / 2)
+                                .attr('ry', 8)
+                                .attr('fill', colors.fill)
+                                .attr('stroke', colors.stroke)
+                                .attr('stroke-width', 1.5);
+                        } else {
+                            node.append('rect')
+                                .attr('x', d.x)
+                                .attr('y', d.y)
+                                .attr('width', d.w)
+                                .attr('height', d.h)
+                                .attr('rx', 4)
+                                .attr('fill', colors.fill)
+                                .attr('stroke', colors.stroke)
+                                .attr('stroke-width', 1.5);
+                        }
+                        node.append('text')
+                            .attr('x', d.x + d.w / 2)
+                            .attr('y', d.y + d.h / 2 + 3)
+                            .attr('text-anchor', 'middle')
+                            .attr('dominant-baseline', 'middle')
+                            .attr('font-size', '11px')
+                            .attr('fill', '#333')
+                            .text(d.name);
+                        break;
+
+                    case 'loop':
+                        // Parallelogram
                         const lx = d.x, ly = d.y, lw = d.w, lh = d.h;
                         const skew = 12;
                         const paraPoints = [
@@ -1336,67 +1107,41 @@
                             .attr('fill', colors.fill)
                             .attr('stroke', colors.stroke)
                             .attr('stroke-width', 2);
-                        
-                        // Loop type label
                         node.append('text')
-                            .attr('x', d.x + d.w / 2).attr('y', d.y + 14)
+                            .attr('x', d.x + d.w / 2)
+                            .attr('y', d.y + d.h / 2)
                             .attr('text-anchor', 'middle')
-                            .attr('font-size', '11px')
-                            .attr('font-weight', 'bold')
-                            .attr('fill', '#333')
-                            .text(d.name);
-                        
-                        // Condition/iterator info
-                        const detailText = d.type === 'forLoop' 
-                            ? `${d.iterator} in ${d.iterable.substring(0, 15)}${d.iterable.length > 15 ? '...' : ''}`
-                            : d.condition.substring(0, 18) + (d.condition.length > 18 ? '...' : '');
-                        
-                        node.append('text')
-                            .attr('x', d.x + d.w / 2).attr('y', d.y + 32)
-                            .attr('text-anchor', 'middle')
-                            .attr('class', 'loop-detail-text')
-                            .text(detailText);
-                        break;
-
-                    case 'loopBody':
-                        node.append('rect')
-                            .attr('x', d.x).attr('y', d.y)
-                            .attr('width', d.w).attr('height', d.h)
-                            .attr('rx', 2)
-                            .attr('fill', CONFIG.colors.loopBody.fill)
-                            .attr('stroke', CONFIG.colors.loopBody.stroke)
-                            .attr('stroke-width', 1)
-                            .attr('stroke-dasharray', '3,2');
-                        node.append('text')
-                            .attr('x', d.x + 5).attr('y', d.y + d.h / 2)
                             .attr('dominant-baseline', 'middle')
-                            .attr('font-size', '9px')
-                            .attr('font-family', 'Fira Code, monospace')
-                            .attr('fill', '#666')
+                            .attr('font-size', '12px')
+                            .attr('font-weight', '600')
+                            .attr('fill', '#333')
                             .text(d.name);
                         break;
 
                     case 'instantiation':
                         node.append('rect')
-                            .attr('x', d.x).attr('y', d.y)
-                            .attr('width', d.w).attr('height', d.h)
+                            .attr('x', d.x)
+                            .attr('y', d.y)
+                            .attr('width', d.w)
+                            .attr('height', d.h)
                             .attr('rx', 5)
                             .attr('fill', colors.fill)
                             .attr('stroke', colors.stroke)
                             .attr('stroke-width', 2);
                         node.append('text')
-                            .attr('x', d.x + d.w / 2).attr('y', d.y + d.h / 2)
+                            .attr('x', d.x + d.w / 2)
+                            .attr('y', d.y + d.h / 2)
                             .attr('text-anchor', 'middle')
                             .attr('dominant-baseline', 'middle')
-                            .attr('font-size', '9px')
+                            .attr('font-size', '10px')
                             .attr('fill', '#333')
-                            .text(d.name.length > 28 ? d.name.substring(0, 25) + '...' : d.name);
+                            .text(d.name);
                         break;
                 }
             });
 
-            // Initial view
-            const scale = Math.min(width / (totalWidth + 100), 1, 0.9);
+            // Initial view transform
+            const scale = Math.min(width / (totalWidth + 100), 1);
             svg.call(zoom.transform, d3.zoomIdentity.translate(20, 10).scale(scale));
         }
 
@@ -1404,42 +1149,11 @@
             let html = `<h4>${d.name}</h4>`;
             html += `<p>Type: <code>${d.type}</code></p>`;
             
-            if (d.type === 'forLoop') {
-                html += `<p>Iterator: <code>${d.iterator}</code></p>`;
-                html += `<p>Iterable: <code>${d.iterable}</code></p>`;
-                if (d.body && d.body.length > 0) {
-                    html += `<p>Body (${d.body.length} statements):</p>`;
-                    html += `<div class="body-list">`;
-                    d.body.forEach(stmt => {
-                        html += `<div>${stmt}</div>`;
-                    });
-                    html += `</div>`;
-                }
-            }
-            
-            if (d.type === 'whileLoop') {
-                html += `<p>Condition: <code>${d.condition}</code></p>`;
-                if (d.body && d.body.length > 0) {
-                    html += `<p>Body (${d.body.length} statements):</p>`;
-                    html += `<div class="body-list">`;
-                    d.body.forEach(stmt => {
-                        html += `<div>${stmt}</div>`;
-                    });
-                    html += `</div>`;
-                }
-            }
-
-            if (d.type === 'loopBody') {
-                html = `<h4>Statement</h4>`;
-                html += `<p><code>${d.fullStatement}</code></p>`;
-            }
-
             if (d.type === 'instantiation' && d.className) {
                 html += `<p>Creates: <code>${d.className}</code></p>`;
             }
-
-            if (d.type === 'method' && d.params !== undefined) {
-                html += `<p>Params: <code>${d.params || 'none'}</code></p>`;
+            if (d.type === 'loop' && d.condition) {
+                html += `<p>Condition: <code>${d.condition}</code></p>`;
             }
 
             tooltip
@@ -1465,6 +1179,7 @@
         });
 
         document.getElementById('resetView').addEventListener('click', () => {
+            const width = svg.node().parentElement.clientWidth;
             svg.transition().call(zoom.transform, d3.zoomIdentity.translate(20, 10).scale(0.8));
         });
 
@@ -1480,7 +1195,9 @@
             URL.revokeObjectURL(url);
         });
 
+        // =============================================
         // Parse Button
+        // =============================================
         document.getElementById('parseBtn').addEventListener('click', () => {
             files[activeFileIndex].code = codeInput.value;
             
@@ -1497,47 +1214,90 @@
             renderSequentialFlow(projectName, parsedModules);
         });
 
+        // =============================================
         // Load Example
+        // =============================================
         document.getElementById('loadExampleBtn').addEventListener('click', () => {
-            files = [
+            files.length = 0;
+            files.push(
                 {
-                    name: 'countdown.py',
-                    code: `# While loop example
-count = 5
-
-while count > 0:
-    print(f"Counting down: {count}")
-    count = count - 1
-
-print("Blast off!")`
+                    name: 'data.py',
+                    code: `# Question data for the quiz
+question_data = [
+    {"text": "A slug's blood is green.", "answer": "True"},
+    {"text": "The longest war lasted 335 years.", "answer": "True"},
+    {"text": "Pigs can look up into the sky.", "answer": "False"},
+]`
                 },
                 {
-                    name: 'triangle.py',
-                    code: `def user_input():
-    height = int(input("Enter height of the star triangle:\\n"))
-    return height
+                    name: 'question_model.py',
+                    code: `class Question:
+    def __init__(self, q_text, q_answer):
+        self.text = q_text
+        self.answer = q_answer`
+                },
+                {
+                    name: 'quiz_brain.py',
+                    code: `class QuizBrain:
+    def __init__(self, q_list):
+        self.question_number = 0
+        self.question_list = q_list
+        self.score = 0
+    
+    def still_has_questions(self):
+        return self.question_number < len(self.question_list)
+    
+    def next_question(self):
+        current_question = self.question_list[self.question_number]
+        self.question_number += 1
+        user_answer = input(f"Q.{self.question_number}: {current_question.text} (True/False): ")
+        self.check_answer(user_answer, current_question.answer)
+    
+    def check_answer(self, user_answer, correct_answer):
+        if user_answer.lower() == correct_answer.lower():
+            self.score += 1
+            print("You got it right!")
+        else:
+            print("That's wrong.")`
+                },
+                {
+                    name: 'main.py',
+                    code: `from data import question_data
+from question_model import Question
+from quiz_brain import QuizBrain
 
-height = user_input()
+question_bank = []
 
-blanks = height
-stars = 0
+for item in question_data:
+    question = Question(item["text"], item["answer"])
+    question_bank.append(question)
 
-for loops in range(height):
-    blanks -= 1
-    stars += 1
-    print(" " * blanks + "*" * stars)`
+quiz = QuizBrain(question_bank)
+
+while quiz.still_has_questions():
+    quiz.next_question()
+
+print(f"Your final score: {quiz.score}/{quiz.question_number}")`
                 }
-            ];
+            );
 
             activeFileIndex = 0;
             codeInput.value = files[0].code;
-            document.getElementById('projectName').value = 'Loop Examples';
+            document.getElementById('projectName').value = 'Quiz Project';
             renderFileTabs();
         });
 
+        // =============================================
         // Initialize
+        // =============================================
         renderFileTabs();
         initVisualization();
+
+        // Auto-load example on start
+        document.getElementById('loadExampleBtn').click();
+        setTimeout(() => {
+            document.getElementById('parseBtn').click();
+        }, 100);
     </script>
 </body>
 </html>
